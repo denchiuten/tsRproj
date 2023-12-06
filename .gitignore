@@ -9,6 +9,16 @@
 # User-specific files
 .Ruserdata
 
+# Data files
+.rds
+.csv
+
+# Image files
+.jpg
+.png
+.jpeg
+.gif
+
 # Example code in package build process
 *-Ex.R
 
