@@ -71,3 +71,11 @@ df_redshift_left <- df_redshift_cleaned |>
   anti_join(df_gsheet_cleaned, by = c("email", "date")
   )
 
+
+# conclusion --------------------------------------------------------------
+
+# several survey responses were duplicated in the customer feedback submissions object in hubspot
+# duplicate records have been merged, and an *is_merged* boolean flag 
+# has been added to hubs.customer_feedback_submissions_to_contact for filtering merged records
+# hubspot report filters have been updated to search for surveys containing the string 'CSM' 
+# instead of filtering on individual survey names
