@@ -3,21 +3,16 @@
 # script to add fivetran app to all public channels
 
 # Starting Stuff ----------------------------------------------------------
-suppressMessages(
-  {    
-    library(tidyverse)
-    library(lubridate)
-    library(scales)
-    library(zoo)
-    library(patchwork)
-    library(tsViz)
-    library(keyring)
-    library(DBI)
-    library(RPostgreSQL)
-    library(stringr)
-    library(httr)
-  }
-)
+pacman::p_load(
+  tidyverse, 
+  keyring, 
+  DBI, 
+  RPostgreSQL, 
+  stringr, 
+  httr
+  )
+pacman::p_load_current_gh("denchiuten/tsViz")
+
 theme_set(theme_ts())
 query <- "
   SELECT
