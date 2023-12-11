@@ -84,7 +84,7 @@ leave_channel <- function(channel_id) {
   response <- POST(
     url, 
     add_headers(
-      Authorization = paste("Bearer", token)), 
+      Authorization = paste("Bearer", key_get("slack"))), 
     body = list(channel = channel_id), 
     encode = "json"
     )
