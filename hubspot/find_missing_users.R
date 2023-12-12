@@ -26,8 +26,8 @@ query_auth0 <- "
 query_hs <- "
   SELECT
   	id AS hubspot_id,
-  	property_email AS email
-  FROM hubs.contact
+  	email
+  FROM hubs.contact_to_emails
 "
 
 
@@ -59,3 +59,5 @@ df_missing <- df_auth0_norm |>
   left_join(df_hs_norm, by = "email") |> 
   filter(is.na(hubspot_id)) |> 
   select(first_name, last_name, email)
+
+write_csv(df_missing, "contact_import.csv")
