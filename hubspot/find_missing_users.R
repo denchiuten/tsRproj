@@ -17,12 +17,10 @@ theme_set(theme_ts())
 query_auth0 <- "
   SELECT 
   	id AS auth0_id,
-  	email
+  	email,
+  	given_name AS first_name,
+  	family_name AS last_name
   FROM auth0.users
-  WHERE
-  	1 = 1
-  	AND email NOT LIKE '%@terrascope.com'
-  	AND email NOT LIKE '%@gmail.com';
 "
 
 query_hs <- "
@@ -30,5 +28,34 @@ query_hs <- "
   	id AS hubspot_id,
   	property_email AS email
   FROM hubs.contact
-
 "
+
+
+# pull data ---------------------------------------------------------------
+
+con <- aws_connect()
+df_hs <- dbSendQuery(con, query_hs) |> 
+  dbFetch()
+df_auth0 <- dbSendQuery(con, query_auth0) |> 
+  dbFetch()
+
+
+# identify missing --------------------------------------------------------
+
+df_hs_norm <- df_hs |> 
+  mutate(across(email, tolower))
+
+df_auth0_norm <- df_auth0 |>
+  mutate(across(email, tolower)) |> 
+  mutate(across(where(is.character), ~str_remove(., "'"))) |> 
+  filter(
+    !str_detect(email, "terrascope.com"),
+    !str_detect(email, "gmail.com"),
+    !str_detect(email, "@mobileprogramming.com"),
+    !str_detect(email, "mailinator.com")
+    )
+
+df_missing <- df_auth0_norm |> 
+  left_join(df_hs_norm, by = "email") |> 
+  filter(is.na(hubspot_id)) |> 
+  select(first_name, last_name, email)
