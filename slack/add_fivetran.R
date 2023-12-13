@@ -57,7 +57,6 @@ join_channel <- function(channel_id) {
     )
   return(content(response, "parsed"))
 }
-content_response <- content(response)
 
 #add user to channel
 invite_user <- function(channel_id, user_id) {
@@ -123,4 +122,22 @@ for (i in 1:nrow(df_not_in)) {
   }
 
 
+# run loop for channels I'm already in ------------------------------------
 
+df_already_in <- df_raw |> 
+  filter(am_member == 1) |> 
+  arrange(channel_name)
+
+for (i in 1:nrow(df_already_in)) {
+  channel_id <- df_already_in$channel_id[i]
+  channel_name <- df_already_in$channel_name[i]
+  
+  # Invite app
+  invite_response <- invite_user(channel_id, fivetran_id)
+  if (invite_response$ok) {
+    print(str_glue("Invited app to channel: #{channel_name} \n"))
+  } else {
+    print(str_glue("Failed to invite app to channel: #{channel_name}. Error: {invite_response$error} \n"))
+  }
+    
+}
