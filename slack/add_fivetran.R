@@ -9,35 +9,41 @@ pacman::p_load(
   DBI, 
   RPostgreSQL, 
   stringr, 
+  glue,
   httr
   )
 pacman::p_load_current_gh("denchiuten/tsViz")
+my_id <- "U03F7MMQSHJ" #replace with your own Slack user ID
+# app_id <- "U0698LW7SRY"  #fivetran
 
+app_id <- "U042GKVS75Y" #golinks
 theme_set(theme_ts())
-query <- "
-  SELECT
-  	c.id AS channel_id,
-  	c.name AS channel_name,
-  	SUM(
-  	CASE WHEN m.user_id = 'U03F7MMQSHJ'THEN 1 ELSE 0 END
-  	) AS am_member -- return 1 if Dennis is already a member
-  FROM slack.channel AS c
-  INNER JOIN slack.channel_member	AS m
-  	ON c.id = m.channel_id
-  WHERE
-  	1 = 1
-  	AND c.is_archived = FALSE
-  	AND c.is_private = FALSE
-  	AND c.name NOT LIKE 'app-deployment-alerts%' 
-  GROUP BY 1,2
-  HAVING SUM(
-    CASE WHEN m.user_id = 'U0698LW7SRY' THEN 1 ELSE 0 END
-    ) = 0 -- exclude channels where Fivetran app is already a member
-"
 
-fivetran_id <- "U0698LW7SRY"
 # connect to redshift -----------------------------------------------------
 con <- aws_connect()
+query <- glue_sql(
+  "
+    SELECT
+    	c.id AS channel_id,
+    	c.name AS channel_name,
+    	SUM(
+    	CASE WHEN m.user_id =  {my_id} THEN 1 ELSE 0 END
+    	) AS am_member -- return 1 if Dennis is already a member
+    FROM slack.channel AS c
+    INNER JOIN slack.channel_member	AS m
+    	ON c.id = m.channel_id
+    WHERE
+    	1 = 1
+    	AND c.is_archived = FALSE
+    	AND c.is_private = FALSE
+    	AND c.name NOT LIKE 'app-deployment-alerts%' 
+    GROUP BY 1,2
+    HAVING SUM(
+      CASE WHEN m.user_id = {app_id} THEN 1 ELSE 0 END
+      ) = 0 -- exclude channels where app is already a member
+  ", .con = con
+  )
+                  
 df_raw <- dbSendQuery(con, query) |> 
   dbFetch()
 
@@ -102,7 +108,7 @@ for (i in 1:nrow(df_not_in)) {
     print(str_glue("Joined channel: #{channel_name} \n"))
     
     # If successful, invite app
-    invite_response <- invite_user(channel_id, fivetran_id)
+    invite_response <- invite_user(channel_id, app_id)
     if (invite_response$ok) {
       print(str_glue("Invited app to channel: #{channel_name} \n"))
       } else {
@@ -133,11 +139,10 @@ for (i in 1:nrow(df_already_in)) {
   channel_name <- df_already_in$channel_name[i]
   
   # Invite app
-  invite_response <- invite_user(channel_id, fivetran_id)
+  invite_response <- invite_user(channel_id, app_id)
   if (invite_response$ok) {
     print(str_glue("Invited app to channel: #{channel_name} \n"))
   } else {
     print(str_glue("Failed to invite app to channel: #{channel_name}. Error: {invite_response$error} \n"))
   }
-    
 }
