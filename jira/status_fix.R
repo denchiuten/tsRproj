@@ -13,7 +13,7 @@ pacman::p_load(
   DBI,
   RPostgreSQL,
   httr,
-  jsonlite
+  RJSONIO
   
 )
 pacman::p_load_current_gh("denchiuten/tsViz")
