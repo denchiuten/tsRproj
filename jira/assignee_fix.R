@@ -13,6 +13,7 @@ pacman::p_load(
   DBI,
   RPostgreSQL,
   httr,
+  RJSONIO
 )
 pacman::p_load_current_gh("denchiuten/tsViz")
 theme_set(theme_ts())
@@ -72,23 +73,25 @@ df_last <- df_ranked |>
 # function ----------------------------------------------------------------
 
 # Function to change the assignee of an issue
-update_assignee <- function(issue_key, user_id, user_name) {
-  url <- str_glue("{jira_base}/rest/api/2/issue/{issue_key}")
-  data <- toJSON(
+update_assignee <- function(issue_key, user_id) {
+  url <- str_glue("{jira_base}/rest/api/3/issue/{issue_key}")
+
+  data <- RJSONIO::toJSON(
     list(
       fields = list(
-        assignee = c(id = user_id)
+        assignee = c(accountId = user_id)
         )
       )
     )
   
+  
   # PUT request to update the issue
-  response <- PUT(
-    url, 
-    body = data, 
-    authenticate(jira_username, key_get("jira", jira_username), "basic"),
-    add_headers("Content-Type" = "application/json", "Accept" = "application/json")
-    )
+response <- PUT(
+  url, 
+  body = data, 
+  authenticate(jira_username, key_get("jira", jira_username), "basic"),
+  add_headers("Content-Type" = "application/json", "Accept" = "application/json")
+  )
 }
 # run a loop --------------------------------------------------------------
 
@@ -98,11 +101,11 @@ for (i in 1:nrow(df_last)) {
   user_id <- df_last$assignee_id[i]
   user_name <- df_last$assignee_name[i]
  
-  response <- update_assignee(issue_key, user_id, user_name)
+  response <- update_assignee(issue_key, user_id)
   # Check response
   if (status_code(response) == 204) {
     print(str_glue("Updated assignee for issue {issue_key} to {user_name}"))
   } else {
-    print(str_glue("Failed to update issue {issue_id}: Error {status_code(response)}"))
+    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)}"))
   }
 }
