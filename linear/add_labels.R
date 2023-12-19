@@ -27,24 +27,6 @@ df_raw <- dbFetch(dbSendQuery(con, query))
 
 # get list of label values ------------------------------------------------
 
-labelQuery <- "
-  {
-    issueLabels(filter: {
-      name: {contains: 'Pod'}
-      }
-    ) {
-      nodes {
-        id
-        name
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-"
-
 label_query <- "
   {
     issueLabels(
@@ -71,6 +53,20 @@ parsed_response <- content(label_response, as = "text") |>
 
 # convert to data frame 
 df_labels <- bind_rows(parsed_response$data$issueLabels)
+
+
+
+# get issues without the label --------------------------------------------
+issue_query <- "
+  {
+    issueLabels(
+      filter: { 
+        name: { contains: \"Pod\" }
+        }
+      ) {
+      nodes {id, name}
+      }
+  }"
 
 # review query output -----------------------------------------------------
 
@@ -114,4 +110,23 @@ assign_label <- function(issue_id, label_id) {
       "Content-Type" = "application/json"
       )
     )
+}
+
+
+# now loop ----------------------------------------------------------------
+
+for (i in 1:nrow(df_joined)) {
+  
+  issue_id <- df_joined$linear_issue_id[i]
+  label_id <- df_joined$id[i]
+  label_name <- df_joined$label[i]
+  issue_key <- df_joined$linear_issue_key[i]
+  
+  response <- assign_label(issue_id, label_id)
+  # Check response
+  if (status_code(response) == 200) {
+    print(str_glue("Added label {label_name} to {issue_key}"))
+  } else {
+    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)}"))
+  }
 }

@@ -1,5 +1,6 @@
 SELECT
 	lissue.id AS linear_issue_id,
+	lissue.identifier AS linear_issue_key,
 	team.name AS team_name,
 	team.id AS team_id,
 	jissue.key AS jira__issue_key,
