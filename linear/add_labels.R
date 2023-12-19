@@ -27,7 +27,7 @@ df_raw <- dbFetch(dbSendQuery(con, query))
 
 # get list of label values ------------------------------------------------
 
-issueQuery <- "
+labelQuery <- "
   {
     issueLabels {
       nodes {
@@ -41,7 +41,7 @@ url <- "https://api.linear.app/graphql"
 
 label_response <- POST(
   url,
-  body = toJSON(list(query = query)),
+  body = toJSON(list(query = labelQuery)),
   add_headers(
     Authorization = key_get("linear"),
     "Content-Type" = "application/json"
@@ -59,3 +59,9 @@ df_labels <- bind_rows(parsed_response$data$issueLabels)
 df_grouped <- df_raw |> 
   count(linear_issue_id) |> 
   filter(n > 1)
+
+df_clean <- df_raw |> 
+  mutate(label = case_when(
+      jira_project_key == "MEASURE" ~ "Measure Pod"
+    )
+  )
