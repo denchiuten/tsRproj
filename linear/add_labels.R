@@ -29,19 +29,38 @@ df_raw <- dbFetch(dbSendQuery(con, query))
 
 labelQuery <- "
   {
-    issueLabels {
+    issueLabels(filter: {
+      name: {contains: 'Pod'}
+      }
+    ) {
       nodes {
         id
         name
       }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
     }
   }
 "
+
+label_query <- "
+  {
+    issueLabels(
+      filter: { 
+        name: { contains: \"Pod\" }
+        }
+      ) {
+      nodes {id, name}
+      }
+  }"
+
 url <- "https://api.linear.app/graphql"
 
 label_response <- POST(
   url,
-  body = toJSON(list(query = labelQuery)),
+  body = toJSON(list(query = label_query)),
   add_headers(
     Authorization = key_get("linear"),
     "Content-Type" = "application/json"
@@ -60,8 +79,39 @@ df_grouped <- df_raw |>
   count(linear_issue_id) |> 
   filter(n > 1)
 
-df_clean <- df_raw |> 
-  mutate(label = case_when(
-      jira_project_key == "MEASURE" ~ "Measure Pod"
+df_joined <- df_raw |> 
+  mutate(
+    label = str_glue("{jira_project_key} Pod")
+    ) |> 
+  inner_join(
+    df_labels,
+    by = c("label" = "name")
     )
-  )
+
+
+# function to assign labels -----------------------------------------------
+
+assign_label <- function(issue_id, label_id) {
+  mutation <- "mutation{
+    issueAddLabel(
+      id: \"<ISSUE_ID>\"
+      labelId: \"<LABEL_ID>\" 
+    ) {
+      success
+    }
+  }"
+
+  mutation <- gsub("<ISSUE_ID>", issue_id, mutation)
+  mutation <- gsub("<LABEL_ID>", label_id, mutation)
+  
+  url <- "https://api.linear.app/graphql"
+  response <- POST(
+    url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+      )
+    )
+}
