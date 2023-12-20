@@ -19,7 +19,7 @@ pacman::p_load_current_gh("denchiuten/tsViz")
 theme_set(theme_ts())
 
 query <- read_file("linear_issue_query.sql")
-
+api_url <- "https://api.linear.app/graphql"
 # pull data from Redshift ---------------------------------------------------------------
 con <- aws_connect()
 df_raw <- dbFetch(dbSendQuery(con, query))
@@ -41,7 +41,7 @@ label_query <- "
 url <- "https://api.linear.app/graphql"
 
 label_response <- POST(
-  url,
+  url = api_url,
   body = toJSON(list(query = label_query)),
   add_headers(
     Authorization = key_get("linear"),
@@ -87,22 +87,33 @@ df_joined <- df_raw |>
 
 # function to assign labels -----------------------------------------------
 
-assign_label <- function(issue_id, label_id) {
-  mutation <- "mutation{
-    issueAddLabel(
-      id: \"<ISSUE_ID>\"
-      labelId: \"<LABEL_ID>\" 
-    ) {
-      success
-    }
-  }"
-
-  mutation <- gsub("<ISSUE_ID>", issue_id, mutation)
-  mutation <- gsub("<LABEL_ID>", label_id, mutation)
+assign_label <- function(issue_id, label_id, url) {
+  # mutation <- "mutation{
+  #   issueAddLabel(
+  #     id: \"<ISSUE_ID>\"
+  #     labelId: \"<LABEL_ID>\" 
+  #   ) {
+  #     success
+  #   }
+  # }"
   
-  url <- "https://api.linear.app/graphql"
+  mutation <- str_glue(
+  "
+    mutation{{
+      issueAddLabel(
+        id: \"{issue_id}\"
+        labelId: \"{label_id}\" 
+        ) {{
+        success
+      }}
+    }}
+  ")
+
+  # mutation <- gsub("<ISSUE_ID>", issue_id, mutation)
+  # mutation <- gsub("<LABEL_ID>", label_id, mutation)
+  
   response <- POST(
-    url, 
+    url = url, 
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
@@ -122,7 +133,7 @@ for (i in 1:nrow(df_joined)) {
   label_name <- df_joined$label[i]
   issue_key <- df_joined$linear_issue_key[i]
   
-  response <- assign_label(issue_id, label_id)
+  response <- assign_label(issue_id, label_id, api_url)
   # Check response
   if (status_code(response) == 200) {
     print(str_glue("Added label {label_name} to {issue_key}"))
