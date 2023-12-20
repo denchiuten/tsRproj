@@ -138,6 +138,50 @@ assign_parent <- function(child_id, parent_id, url) {
   )
 }
 
+# mark an issue as a duplicate of another
+mark_dupe <- function(issue_id, duplicate_of_id, url) {
+  # mutation <- str_glue(
+  #   "
+  #     mutation{{
+  #       issueUpdate(
+  #         id: \"{issue_id}\"
+  #         input: {{
+  #           duplicateOfId:\" {duplicate_of_id}\" 
+  #         }}
+  #       ) {{
+  #         success
+  #       }}
+  #     }}
+  #   "
+  # )
+  mutation <- str_glue(
+    "
+      mutation {{
+        issueRelationCreate(
+          input : {{
+            issueId: \"{issue_id}\"
+            relatedIssueId: \"{duplicate_of_id}\"
+            type: duplicate
+          }}
+        ) {{
+          success
+        }}
+      }}
+    "
+  )
+  
+  
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
 # run loop to get all Linear issues with Jira URLs attached----------------------------------------------------------------
 
 # Initialize variables for pagination
@@ -220,6 +264,7 @@ df_linear_filtered <- df_linear_issues |>
     jira_key = str_remove(attachment_url, jira_url_base)
     ) |> 
   select(
+    status,
     linear_id = issue_id,
     linear_key = issue_identifier,
     linear_parent_id = parent_id,
@@ -235,6 +280,41 @@ df_missing <- df_jira_raw |>
 ss <- gs4_get(gsheet_url)
 write_sheet(df_missing, ss, sheet = as.character(today()))
 
+
+# find and fix duplicate issues that aren't marked as Duplicate in Linear -------------------------------------------
+
+df_dupes <- df_linear_filtered |> 
+  filter(status != "Duplicate") |> 
+  arrange(jira_key, linear_key) |> 
+  group_by(jira_key) |> 
+  mutate(n = row_number()) |> 
+  ungroup()
+
+df_dupes_wide <- df_dupes |> 
+  pivot_wider(
+    id_cols = jira_key,
+    values_from = c(linear_id, linear_key),
+    names_from = n
+  ) |> 
+  filter(linear_id_2 != "NULL")
+
+# loop_time
+for (i in 1:nrow(df_dupes_wide)) {
+  
+  issue_id <- df_dupes_wide$linear_id_2[i]
+  duplicate_of_id <- df_dupes_wide$linear_id_1[i]
+  
+  issue_key <- df_dupes_wide$linear_key_2[i]
+  duplicate_of_key <- df_dupes_wide$linear_key_1[i]
+  
+  response <- mark_dupe(issue_id, duplicate_of_id, api_url)
+  # Check response
+  if (status_code(response) == 200) {
+    print(str_glue("{issue_key} is now marked as a duplicate of {duplicate_of_key}"))
+  } else {
+    print(str_glue("Failed to mark {issue_key} as a duplicate of {duplicate_of_key}"))
+  }
+}
 
 # spot check for one issue --------------------------------------------------------------------
 
