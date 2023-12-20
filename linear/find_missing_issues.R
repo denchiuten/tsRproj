@@ -33,8 +33,9 @@ gs4_auth("dennis@terrascope.com")
 con <- aws_connect()
 df_jira_raw <- dbFetch(dbSendQuery(con, sql_query))
 
-# function to find linear issues with attachments ---------------------------------------------------------------
+# functions ---------------------------------------------------------------
 
+# fetch linear issues and their attachments
 fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
@@ -103,6 +104,33 @@ fetch_issues <- function(url, cursor = NULL) {
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
+# assign parent to child issues in Linear
+assign_parent <- function(child_id, parent_id, url) {
+  
+  mutation <- str_glue(
+    "
+    mutation{{
+      issueUpdate(
+        id: \"{child_id}\"
+        input: {{
+          parentId: \"{parent_id}\" 
+        }}
+        ) {{
+        success
+      }}
+    }}
+  ")
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
 
 # run loop to get all Linear issues with Jira URLs attached----------------------------------------------------------------
 
@@ -273,5 +301,22 @@ df_orphans <- df_linear_clean |>
 df_final_orphans <- df_orphans |> 
   filter(!is.na(linear_id.parent))
 
-x <- df_orphans |> distinct(jira_parent_key)
-write_sheet(x, ss, sheet = "check")
+# run loop
+for (i in 1:nrow(df_final_orphans)) {
+  
+  child_id <- df_final_orphans$linear_id.child[i]
+  parent_id <- df_final_orphans$linear_id.parent[i]
+  
+  child_key <- df_final_orphans$linear_key.child[i]
+  parent_key <- df_final_orphans$linear_key.parent[i]
+  
+  response <- assign_parent(child_id, parent_id, api_url)
+  # Check response
+  if (status_code(response) == 200) {
+    print(str_glue("{parent_key} is now the parent of {child_key}"))
+  } else {
+    print(str_glue("Failed to update issue {child_key}: Error {status_code(response)}"))
+  }
+}
+# x <- df_orphans |> distinct(jira_parent_key)
+# write_sheet(x, ss, sheet = "check")

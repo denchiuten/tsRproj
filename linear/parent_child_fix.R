@@ -87,7 +87,7 @@ assign_parent <- function(child_id, parent_id, url) {
 }
 
 # run a loop --------------------------------------------------------------
-for (i in 1:nrow(df_final)) {
+for (i in 1:nrow(df_final_orphans)) {
   
   child_id <- df_final$linear_issue_id.child[i]
   parent_id <- df_final$linear_issue_id.parent[i]
