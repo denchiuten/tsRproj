@@ -9,10 +9,17 @@ SELECT
 FROM linear.issue AS lchild
 INNER JOIN linear.team AS team
 	ON lchild.team_id = team.id
+	AND team._fivetran_deleted IS FALSE
 INNER JOIN linear.attachment AS att 
 	ON lchild.id = att.issue_id
 	AND att.url IS NOT NULL
+	AND att._fivetran_deleted IS FALSE
 INNER JOIN jra.issue AS jchild
 	ON att.url = 'https://gpventure.atlassian.net/browse/' || jchild.key
+	AND jchild._fivetran_deleted IS FALSE
 INNER JOIN jra.project AS p
 	ON jchild.project = p.id
+	AND p._fivetran_deleted IS FALSE
+WHERE
+	1 = 1
+	AND lchild._fivetran_deleted IS FALSE
