@@ -48,7 +48,10 @@ fetch_issues <- function(url, cursor = NULL) {
             }} 
             nodes {{
               id 
-              identifier 
+              identifier
+              state {{
+                name
+              }}
               parent {{
                 id
                 identifier
@@ -76,6 +79,9 @@ fetch_issues <- function(url, cursor = NULL) {
             nodes {{
               id 
               identifier
+               state {{
+                name
+              }}
                parent {{
                 id
                 identifier
@@ -156,6 +162,7 @@ df_linear_issues <- map_df(
       issue_identifier <- .x[["identifier"]]
       parent_id <- if (!is.null(.x[["parent"]])) .x[["parent"]][["id"]] else NA
       parent_identifier <- if (!is.null(.x[["parent"]])) .x[["parent"]][["identifier"]] else NA
+      status <- if (!is.null(.x[["state"]])) .x[["state"]][["name"]] else NA
   
       # Initialize an empty data frame for attachments
       attachments_df <- data.frame(
@@ -189,6 +196,7 @@ df_linear_issues <- map_df(
       
       # Combine issue information with attachments
       data.frame(
+        status,
         issue_id, 
         issue_identifier, 
         parent_id, 
