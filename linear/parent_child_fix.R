@@ -85,3 +85,22 @@ assign_parent <- function(child_id, parent_id, url) {
     )
   )
 }
+
+# run a loop --------------------------------------------------------------
+for (i in 1:nrow(df_final)) {
+  
+  child_id <- df_final$linear_issue_id.child[i]
+  parent_id <- df_final$linear_issue_id.parent[i]
+  
+  child_key <- df_final$linear_issue_key.child[i]
+  parent_key <- df_final$linear_issue_key.parent[i]
+  
+  response <- assign_parent(child_id, parent_id, api_url)
+  # Check response
+  if (status_code(response) == 200) {
+    print(str_glue("{parent_key} is now the parent of {child_key}"))
+  } else {
+    print(str_glue("Failed to update issue {child_key}: Error {status_code(response)}"))
+  }
+}
+
