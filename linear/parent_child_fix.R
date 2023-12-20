@@ -51,3 +51,37 @@ df_check <- df_child_parent |>
     is.na(linear_issue_id.parent)
   ) |> 
   count(jira_parent_issue_type)
+
+# now prep the final data frame for processing
+df_final <- df_child_parent |> 
+  filter(!is.na(linear_issue_id.parent))
+
+
+# function ----------------------------------------------------------------
+
+assign_parent <- function(child_id, parent_id, url) {
+
+  mutation <- str_glue(
+    "
+    mutation{{
+      issueUpdate(
+        id: \"{child_id}\"
+        input: {{
+          parentId: \"{parent_id}\" 
+        }}
+        ) {{
+        success
+      }}
+    }}
+  ")
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
