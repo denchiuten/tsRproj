@@ -39,36 +39,46 @@ fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
       "
-      {{
-        issues(first: 200) {{
-          pageInfo {{
-            endCursor
-            hasNextPage
-          }} 
-          nodes {{
-            id 
-            attachments {{
-              nodes {{
-                id
-                url
-              }}
-            }}
-          }}
-        }}
-      }}
-    "
-    )
-  } else {
-    query <- str_glue(
-      "
         {{
-          issues(first: 200, after: \"{cursor}\") {{
+          issues(first: 100) {{
             pageInfo {{
               endCursor
               hasNextPage
             }} 
             nodes {{
               id 
+              identifier 
+              parent {{
+                id
+                identifier
+              }}
+              attachments {{
+                nodes {{
+                  id
+                  url
+                }}
+              }}
+            }}
+          }}
+        }}
+      "
+    )
+  } else {
+    query <- str_glue(
+      "
+        {{
+          issues(first: 100, after: \"{cursor}\") {{
+            pageInfo {{
+              endCursor
+              hasNextPage
+            }} 
+            nodes {{
+              id 
+              identifier
+               parent {{
+                id
+                identifier
+              }}
               attachments {{
                 nodes {{
                   id
@@ -111,36 +121,62 @@ while(has_next_page == TRUE) {
 
 # Flatten the data and create a data frame, thanks ChatGPT
 
-df_issues_attachments <- map_df(
+df_linear_issues <- map_df(
   all_issues, 
   ~ {
-    issue_id <- .x[["id"]]  # Safe access
-    
-    # Check if attachments exist and are in the expected format
-    if (!is.null(.x[["attachments"]]) && "nodes" %in% names(.x[["attachments"]])) {
-      attachments <- .x[["attachments"]][["nodes"]]  # Safe access
+      issue_id <- .x[["id"]]
+      issue_identifier <- .x[["identifier"]]
+      parent_id <- if (!is.null(.x[["parent"]])) .x[["parent"]][["id"]] else NA
+      parent_identifier <- if (!is.null(.x[["parent"]])) .x[["parent"]][["identifier"]] else NA
+  
+      # Initialize an empty data frame for attachments
+      attachments_df <- data.frame(
+        attachment_id = character(),
+        attachment_url = character(),
+        stringsAsFactors = FALSE
+      )
       
-      if (length(attachments) > 0 && is.list(attachments)) {
-        attachments_df <- map_df(attachments, ~ data.frame(
-          issue_id = issue_id,
-          attachment_id = .x[["id"]],  # Safe access
-          attachment_url = .x[["url"]],  # Safe access
-          stringsAsFactors = FALSE
-        ))
-      } else {
-        data.frame(issue_id = issue_id, attachment_id = NA, attachment_url = NA, stringsAsFactors = FALSE)
+      # Check if attachments are present and correctly structured
+      if (!is.null(.x[["attachments"]]) && "nodes" %in% names(.x[["attachments"]])) {
+        if (length(.x[["attachments"]][["nodes"]]) > 0) {
+          attachments_df <- map_df(
+            .x[["attachments"]][["nodes"]], 
+            ~ data.frame(
+                attachment_id = .x[["id"]],
+                attachment_url = .x[["url"]],
+                stringsAsFactors = FALSE
+            )
+          )
+        }
       }
-    } else {
-      data.frame(issue_id = issue_id, attachment_id = NA, attachment_url = NA, stringsAsFactors = FALSE)
-    }
-  }
+      
+      # If there are no attachments, create a single row with NAs
+      if (nrow(attachments_df) == 0) {
+        attachments_df <- data.frame(
+          attachment_id = NA, 
+          attachment_url = NA, 
+          stringsAsFactors = FALSE
+        )
+      }
+      
+      # Combine issue information with attachments
+      data.frame(
+        issue_id, 
+        issue_identifier, 
+        parent_id, 
+        parent_identifier,
+        attachments_df
+      )
+  }, 
+  .id = NULL
 )
+
 
 
 # prep final data set -----------------------------------------------------
 
 # filter the Linear list for only those with Jira url links
-df_linear_filtered <- df_issues_attachments |> 
+df_linear_filtered <- df_linear_issues |> 
   filter(
     str_detect(attachment_url, jira_url_base)
     ) |> 
@@ -149,6 +185,9 @@ df_linear_filtered <- df_issues_attachments |>
     ) |> 
   select(
     linear_id = issue_id,
+    linear_key = issue_identifier,
+    linear_parent_id = parent_id,
+    linear_parent_key = parent_identifier,
     jira_key
     )
 
@@ -159,3 +198,80 @@ df_missing <- df_jira_raw |>
 # save output to google sheet
 ss <- gs4_get(gsheet_url)
 write_sheet(df_missing, ss, sheet = as.character(today()))
+
+
+# spot check for one issue --------------------------------------------------------------------
+
+query <- "
+  {
+    issue(id : \"PLAT-1055\") {
+      id 
+      identifier
+      attachments {
+        nodes {
+          id
+          url
+        }
+      }
+    }
+  }
+"
+
+response <- POST(
+  api_url, 
+  body = toJSON(list(query = query)), 
+  add_headers(
+    Authorization = key_get("linear"),
+    "Content-Type" = "application/json"
+  )
+)
+df_plat_1055 <- fromJSON(content(response, as = "text"), flatten = TRUE)
+x <- df_plat_1055$data$issue
+
+
+
+# fix parent child mappings -----------------------------------------------
+# get rid of unnec columns
+df_linear_clean <- df_linear_filtered |> 
+  select(linear_id, linear_key, jira_key, linear_parent_id) |> 
+  arrange(jira_key, linear_key) |> 
+  group_by(jira_key) |> 
+  #identify cases where multiple Linear issues are linked to the same Jira issue
+  mutate(n = row_number()) |>  
+  ungroup() |> 
+  # and just take the first one
+  filter(n == 1) |> 
+  select(!n)
+
+df_jira_clean <-  df_jira_raw |> 
+  select(jira_key = issue_key, jira_parent_key = parent_key)
+
+df_orphans <- df_linear_clean |> 
+  
+  # only the ones that don't already have a parent assigned in Linear
+  # then get rid of the column because it's confusing
+  filter(is.na(linear_parent_id)) |> 
+  select(-linear_parent_id) |> 
+  
+  # inner join to Jira query results to find Jira parent key
+  inner_join( 
+    df_jira_clean,  
+    by = c("jira_key")
+  ) |> 
+  
+  # only those issues that have a parent in Jira
+  filter(!is.na(jira_parent_key)) |>   
+  
+  # join it back to the linear data to get the linear ID of Jira parent issues
+  left_join(
+    select(df_linear_clean, -linear_parent_id),
+    by = c("jira_parent_key" = "jira_key"),
+    suffix = c(".child", ".parent"),
+  )
+
+# this is the final list for which we need to assign the parents in Linear via the API
+df_final_orphans <- df_orphans |> 
+  filter(!is.na(linear_id.parent))
+
+x <- df_orphans |> distinct(jira_parent_key)
+write_sheet(x, ss, sheet = "check")

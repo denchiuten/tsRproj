@@ -3,9 +3,13 @@ SELECT
 	s.name AS status,
 	i.key AS issue_key,
 	i.id AS issue_id,
+	i.parent_id AS parent_id,
+	parent.key AS parent_key,
 	p.key AS project_key,
 	p.name AS project_name
 FROM jra.issue AS i
+LEFT JOIN jra.issue AS parent
+	ON i.parent_id = parent.id
 INNER JOIN jra.project AS p
 	ON i.project = p.id
 	AND p._fivetran_deleted IS FALSE

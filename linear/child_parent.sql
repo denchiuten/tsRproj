@@ -1,6 +1,7 @@
 SELECT
 	l.id AS linear_issue_id,
 	l.identifier AS linear_issue_key,
+	l.parent_id AS linear_parent_issue_id,
 	j.id AS jira_issue_id,
 	j.key AS jira_issue_key,
 	j.parent_id AS jira_parent_issue_id,
