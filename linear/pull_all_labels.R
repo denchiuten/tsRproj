@@ -15,12 +15,14 @@ pacman::p_load(
   RPostgreSQL,
   httr,
   RJSONIO,
-  stringr
+  stringr,
+  googlesheets4
 )
 # pacman::p_load_current_gh("denchiuten/tsViz")
 # theme_set(theme_ts())
 api_url <- "https://api.linear.app/graphql"
-
+gs4_auth("dennis@terrascope.com")
+gsheet_url <- "https://docs.google.com/spreadsheets/d/1n06XOzaEvqZQ9QL8rgUZQjhZErNtTcm8koMxPLG7J3w/edit#gid=0"
 
 # function ----------------------------------------------------------------
 get_labels <- function(url, cursor = NULL) {
@@ -78,3 +80,9 @@ df_labels <- map_df(
       stringsAsFactors = FALSE
     )
   )
+
+
+# write results to Google Sheet -------------------------------------------
+
+ss <- gs4_get(gsheet_url)
+write_sheet(df_labels, ss, sheet = "Linear Label Values")
