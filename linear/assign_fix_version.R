@@ -27,7 +27,7 @@ jira_url_base <- "https://gpventure.atlassian.net/browse/"
 
 con <- aws_connect()
 df_jira_raw <- dbFetch(dbSendQuery(con, jira_query))
-
+df_label_map <- dbFetch(dbSendQuery(con, "SELECT * FROM plumbing.jira_fix_version_to_linear_label"))
 
 # pull all Linear issues ---------------------------------------------
 
@@ -193,12 +193,58 @@ df_jira_clean <- df_jira_raw |>
 
 # now join to Jira issues that have a fixVersion value
 df_joined <- df_linear_clean |> 
-  inner_join(df_jira_clean, by = c("jira_key" = "key")) |> 
-  group_by(linear_id) |> 
-  mutate(n_linear = n()) |> 
-  ungroup() |> 
-  group_by(jira_key) |> 
-  mutate(n_jira = n()) |> 
-  ungroup()
+  inner_join(
+    df_jira_clean, 
+    by = c("jira_key" = "key")
+    )
+
+df_with_labels <- df_joined |> 
+  left_join(
+    df_label_map, 
+    by = c("version_name" = "jira_version_name")
+    )
 
 
+# function to assign labels -----------------------------------------------
+
+assign_label <- function(issue_id, label_id, url) {
+
+  mutation <- str_glue(
+    "mutation{{
+      issueAddLabel(
+        id: \"{issue_id}\"
+        labelId: \"{label_id}\" 
+        ) {{
+        success
+        }}
+      }}"
+    )
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
+
+# run loop to assign label to every issue ---------------------------------
+
+for (i in 1:nrow(df_with_labels)) {
+  
+  issue_id <- df_with_labels$linear_id[i]
+  label_id <- df_with_labels$linear_label_id[i]
+  label_name <- df_with_labels$linear_label_name[i]
+  issue_key <- df_with_labels$linear_key[i]
+  
+  response <- assign_label(issue_id, label_id, api_url)
+  
+  # Check response
+  if (status_code(response) == 200) {
+    print(str_glue("Added label {label_name} to {issue_key} ({i} of {nrow(df_with_labels)})"))
+  } else {
+    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)}"))
+  }
+}
