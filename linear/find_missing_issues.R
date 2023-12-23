@@ -258,7 +258,8 @@ df_linear_issues <- map_df(
 # filter the Linear list for only those with Jira url links
 df_linear_filtered <- df_linear_issues |> 
   filter(
-    str_detect(attachment_url, jira_url_base)
+    str_detect(attachment_url, jira_url_base),
+    status != "Duplicate"
     ) |> 
   mutate(
     jira_key = str_remove(attachment_url, jira_url_base)
