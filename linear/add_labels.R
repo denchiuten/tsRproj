@@ -88,14 +88,6 @@ df_joined <- df_raw |>
 # function to assign labels -----------------------------------------------
 
 assign_label <- function(issue_id, label_id, url) {
-  # mutation <- "mutation{
-  #   issueAddLabel(
-  #     id: \"<ISSUE_ID>\"
-  #     labelId: \"<LABEL_ID>\" 
-  #   ) {
-  #     success
-  #   }
-  # }"
   
   mutation <- str_glue(
   "
