@@ -109,8 +109,6 @@ assign_label <- function(issue_id, label_id, url) {
     }}
   ")
 
-  # mutation <- gsub("<ISSUE_ID>", issue_id, mutation)
-  # mutation <- gsub("<LABEL_ID>", label_id, mutation)
   
   response <- POST(
     url = url, 
