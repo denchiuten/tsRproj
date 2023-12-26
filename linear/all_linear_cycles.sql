@@ -1,5 +1,5 @@
 SELECT
-	t.name,
+	t.name AS team_name,
 	c.id AS cycle_id,
 	c.starts_at::DATE AS starts_at,
 	c.ends_at::DATE AS ends_at
