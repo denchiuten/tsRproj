@@ -6,3 +6,8 @@ SELECT
 FROM linear.cycle AS c
 INNER JOIN linear.team AS t
 	ON c.team_id = t.id
+WHERE
+	1 = 1
+	AND c._fivetran_deleted IS FALSE
+	AND t.name <> 'Design'
+ORDER BY 3,4
