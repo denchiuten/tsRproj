@@ -34,9 +34,8 @@ df_jira_raw <- dbFetch(dbSendQuery(con, jira_query))
 fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
-      "
-      {{
-        issues(first: 100) {{
+      "{{
+        issues(filter: {{ cycle: {{null: true}} }}, first: 100) {{
           pageInfo {{
             endCursor
             hasNextPage
@@ -55,14 +54,13 @@ fetch_issues <- function(url, cursor = NULL) {
             }}
           }}
         }}
-      }}
-    "
+      }}"
     )
   } else {
     query <- str_glue(
       "
       {{
-        issues(first: 100, after: \"{cursor}\") {{
+        issues(filter: {{ cycle: {{null: true}} }}, first: 100, after: \"{cursor}\") {{
           pageInfo {{
             endCursor
             hasNextPage
@@ -194,25 +192,21 @@ df_jira_clean <- df_jira_raw |>
 df_joined <- df_linear_clean |> 
   inner_join(
     df_jira_clean, 
-    by = c("jira_key" = "key")
-  )
-
-df_with_labels <- df_joined |> 
-  left_join(
-    df_label_map, 
-    by = c("version_name" = "jira_version_name")
+    by = c("jira_key" = "issue_key")
   )
 
 
 # function to assign labels -----------------------------------------------
 
-assign_label <- function(issue_id, label_id, url) {
+assign_cycle <- function(issue_id, cycle_id, url) {
   
   mutation <- str_glue(
     "mutation{{
-      issueAddLabel(
+      issueUpdate(
         id: \"{issue_id}\"
-        labelId: \"{label_id}\" 
+        input: {{
+          cycleId: \"{cycle_id}\" 
+        }}
         ) {{
         success
         }}
@@ -231,18 +225,18 @@ assign_label <- function(issue_id, label_id, url) {
 
 # run loop to assign label to every issue ---------------------------------
 
-for (i in 1:nrow(df_with_labels)) {
+for (i in 1:nrow(df_joined)) {
   
-  issue_id <- df_with_labels$linear_id[i]
-  label_id <- df_with_labels$linear_label_id[i]
-  label_name <- df_with_labels$linear_label_name[i]
-  issue_key <- df_with_labels$linear_key[i]
+  issue_id <- df_joined$linear_id[i]
+  cycle_id <- df_joined$linear_cycle_id[i]
+  # label_name <- df_with_labels$linear_label_name[i]
+  issue_key <- df_joined$linear_key[i]
   
-  response <- assign_label(issue_id, label_id, api_url)
+  response <- assign_cycle(issue_id, cycle_id, api_url)
   
   # Check response
   if (status_code(response) == 200) {
-    print(str_glue("Added label {label_name} to {issue_key} ({i} of {nrow(df_with_labels)})"))
+    print(str_glue("Assigned {issue_key} to cycle ({i} of {nrow(df_joined)})"))
   } else {
     print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)}"))
   }
