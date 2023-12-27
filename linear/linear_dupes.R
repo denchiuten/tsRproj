@@ -17,7 +17,7 @@ pacman::p_load(
   stringr
 )
 api_url <- "https://api.linear.app/graphql"
-
+jira_url_base <- "https://gpventure.atlassian.net/browse/"
 # pull all Linear issues ---------------------------------------------
 
 # function to fetch linear issues, paginated
@@ -104,7 +104,7 @@ df_linear_issues <- map_df(
   ~ {
     issue_id <- .x[["id"]]
     issue_identifier <- .x[["identifier"]]
-    status <- if (!is.null(.x[["state"]])) .x[["state"]][["name"]] else NA
+    status <- .x[["state"]][["name"]]
     
     # Initialize an empty data frame for attachments
     attachments_df <- data.frame(
@@ -140,10 +140,94 @@ df_linear_issues <- map_df(
     data.frame(
       issue_id, 
       issue_identifier, 
-      assignee,
+      status,
       attachments_df
     )
   }, 
   .id = NULL
 )
 
+
+# clean up and find duplicates----------------------------------------------------------------
+
+df_linear_clean <- df_linear_issues |> 
+  filter(
+    str_detect(attachment_url, jira_url_base)
+  ) |> 
+  mutate(
+    jira_key = str_remove(attachment_url, jira_url_base)
+  ) |> 
+  select(
+    linear_issue_id = issue_id,
+    linear_issue_key = issue_identifier,
+    linear_status = status,
+    jira_key
+  )
+
+df_dupes <- df_linear_clean |> 
+  filter(linear_status != "Duplicate") |> 
+  arrange(jira_key, linear_issue_key) |> 
+  group_by(jira_key) |> 
+  mutate(
+    total = n(),
+    column = row_number()
+    ) |> 
+  filter(total > 1) |> 
+  ungroup()
+
+# now make into a wide data frame with one row per Jira issue 
+# and one column per associated Linear issue
+df_dupes_wide <- df_dupes |> 
+  pivot_wider(
+    id_cols = jira_key,
+    values_from = c(linear_issue_id, linear_issue_key),
+    names_from = column
+  )
+
+
+
+# function to mark an issue as a duplicate of another ---------------------
+mark_dupe <- function(issue_id, duplicate_of_id, url) {
+  mutation <- str_glue(
+    "mutation {{
+        issueRelationCreate(
+          input : {{
+            issueId: \"{issue_id}\"
+            relatedIssueId: \"{duplicate_of_id}\"
+            type: duplicate
+          }}
+        ) {{success}}
+      }}
+    "
+  )
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
+
+
+# loop through ------------------------------------------------------------
+
+for (i in 1:nrow(df_dupes_wide)) {
+  
+  issue_id <- df_dupes_wide$linear_issue_id_2[i]
+  duplicate_of_id <- df_dupes_wide$linear_issue_id_1[i]
+  
+  issue_key <- df_dupes_wide$linear_issue_key_2[i]
+  duplicate_of_key <- df_dupes_wide$linear_issue_key_1[i]
+  
+  response <- mark_dupe(issue_id, duplicate_of_id, api_url)
+  # Check response
+  if (status_code(response) == 200) {
+    print(str_glue("{issue_key} is now marked as a duplicate of {duplicate_of_key} ({i} of {nrow(df_dupes_wide)})"))
+  } else {
+    print(str_glue("Failed to mark {issue_key} as a duplicate of {duplicate_of_key} ({i} of {nrow(df_dupes_wide)})"))
+  }
+}
