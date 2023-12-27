@@ -65,14 +65,11 @@ fetch_issues <- function(url, cursor = NULL) {
           first: 100
           after: \"{cursor}\"
         ) {{
-            pageInfo {{
-              endCursor
-              hasNextPage
-            }} 
+            pageInfo {{endCursor, hasNextPage}} 
             nodes {{
               id 
               identifier
-               state {{name}}
+              state {{name}}
               attachments {{
                 nodes {{id, url}}
               }}
