@@ -54,61 +54,65 @@ parsed_response <- content(label_response, as = "text") |>
 # convert to data frame 
 df_labels <- bind_rows(parsed_response$data$issueLabels)
 
-
-
 # pull all Linear issues without JIRA Project Label---------------------------------------------
 
 fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
       "{{
-        issues(filter: {{ labels: {{parent: {{name: {{neq: \"JIRA Project\"}}}}}} }}, first: 100) {{
-          pageInfo {{
-            endCursor
-            hasNextPage
-          }} 
-          nodes {{
-            id 
-            identifier
-            state {{
-              name
-            }}
-            attachments {{
-              nodes {{
-                id
-                url
+        issues(
+          filter: {{
+            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"JIRA Project\"}} }} }} }}
+          }}, 
+          first: 100
+        ) {{
+            pageInfo {{
+              endCursor
+              hasNextPage
+            }} 
+            nodes {{
+              id 
+              identifier
+              state {{
+                name
+              }}
+              attachments {{
+                nodes {{
+                  id
+                  url
+                }}
               }}
             }}
           }}
-        }}
-      }}"
-    )
+        }}"
+      )
   } else {
     query <- str_glue(
-      "
-      {{
-        issues(filter: {{ cycle: {{null: true}} }}, first: 100, after: \"{cursor}\") {{
-          pageInfo {{
-            endCursor
-            hasNextPage
-          }} 
-          nodes {{
-            id 
-            identifier
-             state {{
-              name
-            }}
-            attachments {{
-              nodes {{
-                id
-                url
+      "{{
+        issues(
+          filter: {{
+            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"JIRA Project\"}} }} }} }}
+          }}, 
+          first: 100, 
+          after: \"{cursor}\"
+        ) {{
+            pageInfo {{
+              endCursor
+              hasNextPage
+            }} 
+            nodes {{
+              id 
+              identifier
+              state {{name}}
+              attachments {{
+                nodes {{id, url}}
               }}
             }}
           }}
-        }}
-      }}
-    "
-    )
+        }}"
+      )
   }
   
   response <- POST(
