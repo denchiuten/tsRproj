@@ -18,12 +18,8 @@ pacman::p_load(
 pacman::p_load_current_gh("denchiuten/tsViz")
 theme_set(theme_ts())
 
-query <- read_file("linear_issue_query.sql")
 api_url <- "https://api.linear.app/graphql"
-# pull data from Redshift ---------------------------------------------------------------
-con <- aws_connect()
-df_raw <- dbFetch(dbSendQuery(con, query))
-
+jira_url_base <- "https://gpventure.atlassian.net/browse/"
 
 # get list of label values ------------------------------------------------
 
@@ -31,14 +27,12 @@ label_query <- "
   {
     issueLabels(
       filter: { 
-        name: { contains: \"Pod\" }
-        }
+        parent: {name: { eqIgnoreCase: \"JIRA Project\" }}
+      }
       ) {
       nodes {id, name}
       }
   }"
-
-url <- "https://api.linear.app/graphql"
 
 label_response <- POST(
   url = api_url,
@@ -191,20 +185,35 @@ df_linear_issues <- map_df(
   .id = NULL
 )
 
-# review query output -----------------------------------------------------
+# clean API query output -----------------------------------------------------
 
-# check to see if any linear issues are linked to multiple Jira issues
-df_grouped <- df_raw |> 
-  count(linear_issue_id) |> 
-  filter(n > 1)
-
-df_joined <- df_raw |> 
+df_linear_clean <- df_linear_issues |> 
+  filter(
+    str_detect(attachment_url, jira_url_base)
+  ) |> 
   mutate(
-    label = str_glue("{jira_project_key} Pod")
+    jira_key = str_remove(attachment_url, jira_url_base),
+    jira_project = str_extract(jira_key, "^[^-]+"),
+  ) |> 
+  select(
+    linear_issue_id = issue_id,
+    linear_issue_key = issue_identifier,
+    jira_key,
+    jira_project
+  )
+
+
+df_joined <- df_linear_clean |> 
+  mutate(
+    label = str_glue("{jira_project} Pod")
     ) |> 
   inner_join(
     df_labels,
     by = c("label" = "name")
+    ) |> 
+  rename(
+    label_id = id,
+    label_name = label
     )
 
 
@@ -218,12 +227,11 @@ assign_label <- function(issue_id, label_id, url) {
       issueAddLabel(
         id: \"{issue_id}\"
         labelId: \"{label_id}\" 
-        ) {{
+      ) {{
         success
       }}
     }}
   ")
-
   
   response <- POST(
     url = url, 
@@ -236,14 +244,13 @@ assign_label <- function(issue_id, label_id, url) {
     )
 }
 
-
 # now loop ----------------------------------------------------------------
 
 for (i in 1:nrow(df_joined)) {
   
   issue_id <- df_joined$linear_issue_id[i]
-  label_id <- df_joined$id[i]
-  label_name <- df_joined$label[i]
+  label_id <- df_joined$label_id[i]
+  label_name <- df_joined$label_name[i]
   issue_key <- df_joined$linear_issue_key[i]
   
   response <- assign_label(issue_id, label_id, api_url)
