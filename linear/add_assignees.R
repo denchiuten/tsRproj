@@ -35,54 +35,52 @@ fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
       "{{
-        issues(filter: {{ assignee: {{null: true}} }}, first: 100) {{
-          pageInfo {{
-            endCursor
-            hasNextPage
-          }} 
-          nodes {{
-            id 
-            identifier
-            state {{
-              name
-            }}
-            attachments {{
-              nodes {{
-                id
-                url
+        issues(
+          filter: {{ 
+            assignee: {{null: true}}
+            attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+          }}
+          first: 100
+        ) {{
+            pageInfo {{endCursor, hasNextPage}} 
+            nodes {{
+              id 
+              identifier
+              state {{name}}
+              attachments {{
+                nodes {{id, url}}
               }}
             }}
           }}
-        }}
-      }}"
-    )
+        }}"
+      )
   } else {
     query <- str_glue(
-      "
-      {{
-        issues(filter: {{ assignee: {{null: true}} }}, first: 100, after: \"{cursor}\") {{
-          pageInfo {{
-            endCursor
-            hasNextPage
-          }} 
-          nodes {{
-            id 
-            identifier
-             state {{
-              name
-            }}
-            attachments {{
-              nodes {{
-                id
-                url
+      "{{
+        issues(
+          filter: {{ 
+            assignee: {{null: true}} 
+            attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+          }}
+          first: 100
+          after: \"{cursor}\"
+        ) {{
+            pageInfo {{
+              endCursor
+              hasNextPage
+            }} 
+            nodes {{
+              id 
+              identifier
+               state {{name}}
+              attachments {{
+                nodes {{id, url}}
               }}
             }}
           }}
-        }}
-      }}
-    "
-    )
-  }
+        }}"
+      )
+    }
   
   response <- POST(
     url, 
@@ -182,7 +180,8 @@ df_joined <- df_linear_clean |>
   inner_join(
     df_jira_raw, 
     by = c("jira_key" = "jira_issue_key")
-  )
+  ) |> 
+  arrange(email, linear_issue_key)
 
 # function to assign assignees -----------------------------------------------
 
@@ -195,9 +194,7 @@ assign_assignee <- function(issue_id, user_id, url) {
         input: {{
           assigneeId: \"{user_id}\" 
         }}
-        ) {{
-        success
-        }}
+        ) {{success}}
       }}"
   )
   
