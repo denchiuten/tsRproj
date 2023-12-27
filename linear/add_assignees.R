@@ -39,6 +39,7 @@ fetch_issues <- function(url, cursor = NULL) {
           filter: {{ 
             assignee: {{null: true}}
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+            state: {{name: {{neq: \"Duplicate\" }}}}
           }}
           first: 100
         ) {{
@@ -47,6 +48,7 @@ fetch_issues <- function(url, cursor = NULL) {
               id 
               identifier
               state {{name}}
+              assignee {{id}}
               attachments {{
                 nodes {{id, url}}
               }}
@@ -61,6 +63,7 @@ fetch_issues <- function(url, cursor = NULL) {
           filter: {{ 
             assignee: {{null: true}} 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+            state: {{name: {{neq: \"Duplicate\" }}}}
           }}
           first: 100
           after: \"{cursor}\"
@@ -70,6 +73,7 @@ fetch_issues <- function(url, cursor = NULL) {
               id 
               identifier
               state {{name}}
+              assignee {{id}}
               attachments {{
                 nodes {{id, url}}
               }}
@@ -114,6 +118,7 @@ df_linear_issues <- map_df(
   ~ {
     issue_id <- .x[["id"]]
     issue_identifier <- .x[["identifier"]]
+    # assignee <- .x[["assignee"]]
     
     # Initialize an empty data frame for attachments
     attachments_df <- data.frame(
@@ -149,6 +154,7 @@ df_linear_issues <- map_df(
     data.frame(
       issue_id, 
       issue_identifier, 
+      # assignee,
       attachments_df
     )
   }, 
