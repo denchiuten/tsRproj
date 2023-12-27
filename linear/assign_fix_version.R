@@ -35,9 +35,14 @@ df_label_map <- dbFetch(dbSendQuery(con, "SELECT * FROM plumbing.jira_fix_versio
 fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
-      "
-      {{
-        issues(first: 100) {{
+      "{{
+        issues(
+          filter: {{ 
+            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Release Version\"}} }} }} }},
+            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+          }},
+          first: 100
+        ) {{
           pageInfo {{
             endCursor
             hasNextPage
@@ -56,14 +61,19 @@ fetch_issues <- function(url, cursor = NULL) {
             }}
           }}
         }}
-      }}
-    "
+      }}"
     )
   } else {
     query <- str_glue(
-      "
-      {{
-        issues(first: 100, after: \"{cursor}\") {{
+      "{{
+        issues(
+          filter: {{ 
+            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Release Version\"}} }} }} }},
+            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+          }},
+          first: 100, 
+          after: \"{cursor}\"
+        ) {{
           pageInfo {{
             endCursor
             hasNextPage
@@ -82,8 +92,7 @@ fetch_issues <- function(url, cursor = NULL) {
             }}
           }}
         }}
-      }}
-    "
+      }}"
     )
   }
   
