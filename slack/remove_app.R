@@ -63,14 +63,14 @@ join_channel <- function(channel_id) {
 }
 
 #add user to channel
-invite_user <- function(channel_id, user_id) {
-  url <- "https://slack.com/api/conversations.invite"
+remove_user <- function(channel_id, user_id) {
+  url <- "https://slack.com/api/conversations.kick"
   response <- POST(
     url, 
     add_headers(
       Authorization = paste("Bearer", key_get("slack"))
     ), 
-    body = list(channel = channel_id, users = user_id), 
+    body = list(channel = channel_id, user = user_id), 
     encode = "json"
   )
   return(content(response, "parsed"))
@@ -106,11 +106,11 @@ for (i in 1:nrow(df_not_in)) {
     print(str_glue("Joined channel: #{channel_name} \n"))
     
     # If successful, invite app
-    invite_response <- invite_user(channel_id, app_id)
-    if (invite_response$ok) {
-      print(str_glue("Invited app to channel: #{channel_name} \n"))
+    remove_response <- remove_user(channel_id, app_id)
+    if (remove_response$ok) {
+      print(str_glue("Removed app from channel: #{channel_name} \n"))
     } else {
-      print(str_glue("Failed to invite app to channel: #{channel_name}. Error: {invite_response$error} \n"))
+      print(str_glue("Failed to remove app from channel: #{channel_name}. Error: {remove_response$error} \n"))
     }
     
     # Leave channel after adding app
@@ -137,10 +137,10 @@ for (i in 1:nrow(df_already_in)) {
   channel_name <- df_already_in$channel_name[i]
   
   # Invite app
-  invite_response <- invite_user(channel_id, app_id)
-  if (invite_response$ok) {
-    print(str_glue("Invited app to channel: #{channel_name} \n"))
+  remove_response <- remove_user(channel_id, app_id)
+  if (remove_response$ok) {
+    print(str_glue("Removed app from channel: #{channel_name} \n"))
   } else {
-    print(str_glue("Failed to invite app to channel: #{channel_name}. Error: {invite_response$error} \n"))
+    print(str_glue("Failed to remove app from channel: #{channel_name}. Error: {remove_response$error} \n"))
   }
 }
