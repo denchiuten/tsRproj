@@ -35,22 +35,20 @@ fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
       "{{
-        issues(filter: {{ cycle: {{null: true}} }}, first: 100) {{
-          pageInfo {{
-            endCursor
-            hasNextPage
+        issues(
+          filter: {{ 
+            cycle: {{null: true}}
+            state: {{name: {{nin: [\"Done\", \"Canceled\"]}}}}
           }} 
+          first: 100
+        ) {{
+          pageInfo {{endCursor, hasNextPage}} 
           nodes {{
             id 
             identifier
-            state {{
-              name
-            }}
+            state {{name}}
             attachments {{
-              nodes {{
-                id
-                url
-              }}
+              nodes {{id, url}}
             }}
           }}
         }}
@@ -58,29 +56,26 @@ fetch_issues <- function(url, cursor = NULL) {
     )
   } else {
     query <- str_glue(
-      "
-      {{
-        issues(filter: {{ cycle: {{null: true}} }}, first: 100, after: \"{cursor}\") {{
-          pageInfo {{
-            endCursor
-            hasNextPage
+      "{{
+        issues(
+          filter: {{ 
+            cycle: {{null: true}} 
+            state: {{name: {{nin: [\"Done\", \"Canceled\"]}}}}
           }} 
+          first: 100 
+          after: \"{cursor}\"
+        ) {{
+          pageInfo {{endCursor, hasNextPage}} 
           nodes {{
             id 
             identifier
-             state {{
-              name
-            }}
+            state {{name}}
             attachments {{
-              nodes {{
-                id
-                url
-              }}
+              nodes {{id, url}}
             }}
           }}
         }}
-      }}
-    "
+      }}"
     )
   }
   
