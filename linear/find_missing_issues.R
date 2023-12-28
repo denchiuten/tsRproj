@@ -140,20 +140,6 @@ assign_parent <- function(child_id, parent_id, url) {
 
 # mark an issue as a duplicate of another
 mark_dupe <- function(issue_id, duplicate_of_id, url) {
-  # mutation <- str_glue(
-  #   "
-  #     mutation{{
-  #       issueUpdate(
-  #         id: \"{issue_id}\"
-  #         input: {{
-  #           duplicateOfId:\" {duplicate_of_id}\" 
-  #         }}
-  #       ) {{
-  #         success
-  #       }}
-  #     }}
-  #   "
-  # )
   mutation <- str_glue(
     "
       mutation {{

@@ -40,6 +40,7 @@ fetch_issues <- function(url, cursor = NULL) {
           filter: {{ 
             labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Release Version\"}} }} }} }},
             team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
           }},
           first: 100
         ) {{
@@ -68,8 +69,17 @@ fetch_issues <- function(url, cursor = NULL) {
       "{{
         issues(
           filter: {{ 
-            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Release Version\"}} }} }} }},
+            labels: {{
+              every: {{
+                parent: {{
+                  name: {{
+                    neqIgnoreCase: \"Release Version\"
+                  }}
+                }}
+              }}
+            }},
             team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            attachments: {{url: {{contains: \"{jira_url_base}\"}}}}
           }},
           first: 100, 
           after: \"{cursor}\"
