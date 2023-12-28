@@ -1,10 +1,9 @@
 SELECT 
-	s.id AS sprint_id,
-	s.state,
-	s.name,
-	s.start_date::DATE AS start_date,
-	s.end_date::DATE AS end_date,
-	b.name
+	s.id AS jira_sprint_id,
+	s.name AS jira_sprint_name,
+	s.start_date::DATE AS jira_start_date,
+	s.end_date::DATE AS jira_end_date,
+	b.name AS jira_board_name
 FROM jra.sprint AS s
 INNER JOIN jra.board AS b
 	ON s.board_id = b.id
