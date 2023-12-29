@@ -17,7 +17,6 @@ pacman::p_load(
   RJSONIO,
   stringr
 )
-pacman::p_load_current_gh("denchiuten/tsViz")
 api_url <- "https://api.linear.app/graphql"
 
 jira_query <- read_file("jira_sprint_issues.sql")
@@ -38,7 +37,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             cycle: {{null: true}}
-            state: {{name: {{nin: [\"Done\", \"Canceled\"]}}}}
+            state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}
             team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
           }} 
           first: 100
@@ -61,7 +60,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             cycle: {{null: true}} 
-            state: {{name: {{nin: [\"Done\", \"Canceled\"]}}}}
+            state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}
             team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
           }} 
           first: 100 
