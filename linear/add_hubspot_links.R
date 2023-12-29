@@ -104,40 +104,11 @@ df_linear_issues <- map_df(
     issue_identifier <- .x[["identifier"]]
     description <- .x[["description"]]
     
-    # Initialize an empty data frame for attachments
-    # attachments_df <- data.frame(
-    #   attachment_id = character(),
-    #   attachment_url = character(),
-    #   stringsAsFactors = FALSE
-    # )
-    
-    # Check if attachments are present and correctly structured
-    # if (!is.null(.x[["attachments"]]) && "nodes" %in% names(.x[["attachments"]])) {
-    #   if (length(.x[["attachments"]][["nodes"]]) > 0) {
-    #     attachments_df <- map_df(
-    #       .x[["attachments"]][["nodes"]], 
-    #       ~ data.frame(
-    #         attachment_url = .x[["url"]],
-    #         stringsAsFactors = FALSE
-    #       )
-    #     )
-    #   }
-    # }
-    
-    # If there are no attachments, create a single row with NAs
-    # if (nrow(attachments_df) == 0) {
-    #   attachments_df <- data.frame(
-    #     attachment_url = NA, 
-    #     stringsAsFactors = FALSE
-    #   )
-    # }
-    
     # Combine issue information with attachments
     data.frame(
       issue_id, 
       issue_identifier, 
       description
-      # attachments_df
     )
   }, 
   .id = NULL
@@ -151,8 +122,52 @@ df_linear_clean <- df_linear_issues |>
     !is.na(url),
     !str_detect(url, "Chttps")
     ) |> 
-  select(-description)
+  select(-description) |> 
+  arrange(issue_identifier)
 
-library(googlesheets4)
-gs4_auth("dennis@terrascope.com")
-write_sheet(df_linear_clean)
+
+# function to attach links ------------------------------------------------
+
+attach_link <- function(issue_id, attachment_url, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      attachmentLinkURL(
+        url: \"{attachment_url}\"
+        issueId: \"{issue_id}\"
+        title: \"Hubspot Ticket Link\"
+      ) {{
+        success
+      }}
+    }}"
+  )
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}
+
+# loop --------------------------------------------------------------------
+
+for (i in 16:nrow(df_linear_clean)) {
+  issue_id <- df_linear_clean$issue_id[i]
+  attachment_url <- df_linear_clean$url[i]
+  issue_key <- df_linear_clean$issue_identifier[i]
+  
+  response <- attach_link(issue_id, attachment_url, api_url)
+  # Check response
+  if (!is.null(response$data)) {
+    print(str_glue("Attached {attachment_url} to {issue_key} ({i} of {nrow(df_linear_clean)})"))
+  } else {
+    print(str_glue("Failed to update issue {issue_key}: \"{response$errors[[1]]$extensions$userPresentableMessage}\" ({i} of {nrow(df_linear_clean)})"))
+  }
+}
+
+
