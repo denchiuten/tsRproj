@@ -15,8 +15,6 @@ pacman::p_load(
   httr,
   RJSONIO
 )
-pacman::p_load_current_gh("denchiuten/tsViz")
-theme_set(theme_ts())
 
 api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"

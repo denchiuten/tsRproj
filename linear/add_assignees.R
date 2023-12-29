@@ -17,7 +17,6 @@ pacman::p_load(
   RJSONIO,
   stringr
 )
-pacman::p_load_current_gh("denchiuten/tsViz")
 api_url <- "https://api.linear.app/graphql"
 
 jira_query <- read_file("linear_jira_user_map.sql")
