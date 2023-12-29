@@ -28,6 +28,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+            state: {{name: {{nin: [\"Duplicate\"]}}}}
           }}
           first: 100
         ) {{
@@ -50,6 +51,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+            state: {{name: {{nin: [\"Duplicate\"]}}}}
           }}
           first: 100
           after: \"{cursor}\"
