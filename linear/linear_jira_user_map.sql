@@ -8,7 +8,7 @@ FROM jra.issue AS i
 INNER JOIN jra.user	AS jirauser
 	ON i.assignee = jirauser.id
 INNER JOIN linear.users AS linearuser
-	ON jirauser.email = linearuser.email
+	ON LOWER(jirauser.email) = LOWER(linearuser.email)
 	AND linearuser._fivetran_deleted IS FALSE
 WHERE
 	1 = 1
