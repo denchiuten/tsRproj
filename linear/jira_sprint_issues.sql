@@ -9,7 +9,7 @@ SELECT
 FROM jra.issue AS i
 INNER JOIN jra.project AS p
 	ON i.project = p.id
-	AND p.key NOT IN ('DSV2', 'CUSIMP', 'DBCLEAN')
+	AND p.key NOT IN ('CUSIMP', 'DBCLEAN')
 INNER JOIN jra.issue_board AS ib
 	ON i.id = ib.issue_id
 INNER JOIN jra.sprint AS s
