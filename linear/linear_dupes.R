@@ -14,10 +14,13 @@ pacman::p_load(
   RPostgreSQL,
   httr,
   RJSONIO,
-  stringr
+  stringr,
+  googlesheets4
 )
 api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
+
+gsheet_url <- "1PyNfJuo56hxLc2R0Rzjw9PW32OQiSFrGEi2nMfV_kyc"
 # pull all Linear issues ---------------------------------------------
 
 # function to fetch linear issues, paginated
@@ -163,7 +166,8 @@ df_linear_clean <- df_linear_issues |>
     linear_issue_id = issue_id,
     linear_issue_key = issue_identifier,
     linear_status = status,
-    jira_key
+    jira_key,
+    attachment_source
   )
 
 df_dupes <- df_linear_clean |> 
@@ -183,10 +187,10 @@ df_dupes_wide <- df_dupes |>
   pivot_wider(
     id_cols = jira_key,
     values_from = c(linear_issue_id, linear_issue_key),
-    names_from = column
+    names_from = attachment_source
   )
 
-
+# write output to GSheet to share with Linear support
 
 # function to mark an issue as a duplicate of another ---------------------
 mark_dupe <- function(issue_id, duplicate_of_id, url) {
