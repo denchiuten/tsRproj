@@ -39,7 +39,7 @@ fetch_issues <- function(url, cursor = NULL) {
               state {{name}}
               assignee {{id}}
               attachments {{
-                nodes {{id, url}}
+                nodes {{sourceType, url}}
               }}
             }}
           }}
@@ -63,7 +63,7 @@ fetch_issues <- function(url, cursor = NULL) {
               state {{name}}
               assignee {{id}}
               attachments {{
-                nodes {{id, url}}
+                nodes {{sourceType, url}}
               }}
             }}
           }}
@@ -110,7 +110,7 @@ df_linear_issues <- map_df(
     
     # Initialize an empty data frame for attachments
     attachments_df <- data.frame(
-      attachment_id = character(),
+      attachment_source = character(),
       attachment_url = character(),
       stringsAsFactors = FALSE
     )
@@ -121,7 +121,7 @@ df_linear_issues <- map_df(
         attachments_df <- map_df(
           .x[["attachments"]][["nodes"]], 
           ~ data.frame(
-            attachment_id = .x[["id"]],
+            attachment_source = .x[["sourceType"]],
             attachment_url = .x[["url"]],
             stringsAsFactors = FALSE
           )
@@ -132,7 +132,7 @@ df_linear_issues <- map_df(
     # If there are no attachments, create a single row with NAs
     if (nrow(attachments_df) == 0) {
       attachments_df <- data.frame(
-        attachment_id = NA, 
+        attachment_source = NA, 
         attachment_url = NA, 
         stringsAsFactors = FALSE
       )
