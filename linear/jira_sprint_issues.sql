@@ -16,5 +16,5 @@ INNER JOIN jra.sprint AS s
 	ON ib.board_id = s.board_id
 	AND s.state <> 'closed'
 	AND s.start_date >= '2023-12-20'
-LEFT JOIN plumbing.jira_sprint_to_linear_cycle AS map
+INNER JOIN plumbing.jira_sprint_to_linear_cycle AS map
 	ON s.id = map.jira_sprint_id
