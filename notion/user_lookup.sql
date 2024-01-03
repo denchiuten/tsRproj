@@ -1,5 +1,4 @@
 SELECT
-	LOWER(n.email) AS email,
 	n.id AS notion_user_id,
 	l.id AS linear_user_id
 FROM notion.users AS n
