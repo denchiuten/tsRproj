@@ -34,8 +34,8 @@ df_tasks_clean <- df_tasks_raw %>%
   mutate(
     assignee_id = sapply(assignee_json, parse_id),
     status = sapply(task_status_json, parse_id),
+    project_id = sapply(project_id_json, parse_project),
     title = sapply(title_json, parse_title)
   ) |> 
-  select(!contains("json"))
-
-# View
+  select(!contains("json")) |> 
+  filter(!status %in% c("done", "archived"))

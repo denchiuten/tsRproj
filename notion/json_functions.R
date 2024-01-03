@@ -54,3 +54,25 @@ parse_title <- function(x) {
     return(NA)
   }
 }
+
+parse_project <- function(x) {
+  # Safely parse the JSON string using RJSONIO
+  json_parsed <- tryCatch({
+    RJSONIO::fromJSON(x)
+  }, error = function(e) {
+    print(paste("Error parsing JSON:", x))
+    return(NULL)
+  })
+  
+  # Check if the parsed JSON is a list with at least one element
+  if (is.list(json_parsed) && length(json_parsed) >= 1) {
+    # Extract the 'id' from the first element, if it is a named character vector
+    if (is.character(json_parsed[[1]]) && !is.null(names(json_parsed[[1]])) && "id" %in% names(json_parsed[[1]])) {
+      return(json_parsed[[1]])
+    } else {
+      return(NA)
+    }
+  } else {
+    return(NA)
+  }
+}

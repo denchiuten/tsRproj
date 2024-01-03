@@ -39,7 +39,11 @@ df_notion_clean <- df_notion_raw |>
     title = sapply(project_title_json, parse_title)
   ) |> 
   select(!contains("json")) |> 
-  filter(!status %in% c("canceled", "done"))
+  filter(!status %in% c("canceled", "done")) |> 
+  left_join(
+    df_user_lookup,
+    by = c("driver_id" = "notion_user_id")
+    )
 
 # Linear API function to create project -----------------------------------
 
@@ -97,15 +101,6 @@ add_project_link <- function(project_id, url, link_label) {
   )
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
-
-response <- create_project("test_R4")
-response$data$projectCreate$project
-
-response_2 <- add_project_link(project_id, url)
-project_id <- response$data$projectCreate$project
-url <- "https://linear.app"
-
-
 
 # loop time ---------------------------------------------------------------
 

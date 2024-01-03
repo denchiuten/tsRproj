@@ -5,7 +5,8 @@ SELECT
 	p.url AS task_url,
 	s.status AS task_status_json,
 	a.people AS assignee_json,
-	t.title AS title_json
+	t.title AS title_json,
+	r.relation AS project_id_json
 FROM notion.page AS p
 LEFT JOIN notion.page_property AS s
 	ON p.id = s.page_id
@@ -16,6 +17,11 @@ LEFT JOIN notion.page_property AS a
 LEFT JOIN notion.page_property AS t
 	ON p.id = t.page_id
 	AND t.title IS NOT NULL
+INNER JOIN notion.page_property AS r
+	ON p.id = r.page_id
+	AND r.id = 'notion%3A%2F%2Ftasks%2Ftask_to_project_relation'
+	AND r.relation IS NOT NULL
+	AND r.relation <> '[]'
 LEFT JOIN notion.users AS creator
 	ON p.created_by = creator.id
 WHERE
