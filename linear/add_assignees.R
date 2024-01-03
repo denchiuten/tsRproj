@@ -38,7 +38,7 @@ fetch_issues <- function(url, cursor = NULL) {
           filter: {{ 
             assignee: {{null: true}}
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{neq: \"Duplicate\" }}}}
+            state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}
           }}
           first: 100
         ) {{
@@ -62,7 +62,7 @@ fetch_issues <- function(url, cursor = NULL) {
           filter: {{ 
             assignee: {{null: true}} 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{neq: \"Duplicate\" }}}}
+            state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}
           }}
           first: 100
           after: \"{cursor}\"
