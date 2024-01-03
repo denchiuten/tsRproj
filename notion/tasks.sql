@@ -1,8 +1,8 @@
 SELECT
-	p.id,
+	p.id AS task_id,
 	creator.id AS creator_id,
 	creator.email AS creator_email,
-	p.url,
+	p.url AS task_url,
 	s.status AS task_status_json,
 	a.people AS assignee_json,
 	t.title AS title_json
