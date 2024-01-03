@@ -26,14 +26,6 @@ con <- aws_connect()
 df_tasks_raw <- dbFetch(dbSendQuery(con, tasks_query))
 df_user_lookup <- dbFetch(dbSendQuery(con, user_query))
 
-
-# clean -------------------------------------------------------------------
-
-# Load necessary libraries
-library(dplyr)
-library(RJSONIO)
-
-
 # stupid JSON parsing functions -------------------------------------------
 parse_id <- function(x) {
   # Safely parse the JSON string
@@ -90,10 +82,10 @@ parse_title <- function(x) {
     return(NA)
   }
 }
-# now apply ---------------------------------------------------------------
 
 
-# And assignee_json is the column with JSON strings
+# now clean the tasks df to parse the json --------------------------------
+
 df_tasks_clean <- df_tasks_raw %>%
   mutate(
     assignee_id = sapply(assignee_json, parse_id),
