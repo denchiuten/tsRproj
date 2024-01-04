@@ -23,6 +23,7 @@ user_query <- read_file("user_lookup.sql")
 source("json_functions.R")
 gsheet_url <- "https://docs.google.com/spreadsheets/d/14zGbsRF_86pGHOE3qIG9OJRXrSfRpJJV2OJWM4TwgQk/edit#gid=0"
 gs4_auth("dennis@terrascope.com")
+api_url <- "https://api.linear.app/graphql"
 # pull raw data -----------------------------------------------------------
 con <- aws_connect()
 df_notion_raw <- dbFetch(dbSendQuery(con, notion_query))
