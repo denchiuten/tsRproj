@@ -21,6 +21,7 @@ api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
 
 gsheet_url <- "1PyNfJuo56hxLc2R0Rzjw9PW32OQiSFrGEi2nMfV_kyc"
+gs4_auth("dennis@terrascope.com")
 # pull all Linear issues ---------------------------------------------
 
 # function to fetch linear issues, paginated
@@ -188,9 +189,12 @@ df_dupes_wide <- df_dupes |>
     id_cols = jira_key,
     values_from = c(linear_issue_id, linear_issue_key),
     names_from = attachment_source
-  )
+  ) |> 
+  arrange(jira_key)
 
 # write output to GSheet to share with Linear support
+# ss <- gs4_get(gsheet_url)
+# write_sheet(df_dupes_wide, ss, sheet = "duplicate_issues")
 
 # function to mark an issue as a duplicate of another ---------------------
 mark_dupe <- function(issue_id, duplicate_of_id, url) {
@@ -223,11 +227,11 @@ mark_dupe <- function(issue_id, duplicate_of_id, url) {
 
 for (i in 1:nrow(df_dupes_wide)) {
   
-  issue_id <- df_dupes_wide$linear_issue_id_2[i]
-  duplicate_of_id <- df_dupes_wide$linear_issue_id_1[i]
+  issue_id <- df_dupes_wide$linear_issue_id_import[i]
+  duplicate_of_id <- df_dupes_wide$linear_issue_id_jira[i]
   
-  issue_key <- df_dupes_wide$linear_issue_key_2[i]
-  duplicate_of_key <- df_dupes_wide$linear_issue_key_1[i]
+  issue_key <- df_dupes_wide$linear_issue_key_import[i]
+  duplicate_of_key <- df_dupes_wide$linear_issue_key_jira[i]
   
   response <- mark_dupe(issue_id, duplicate_of_id, api_url)
   # Check response
