@@ -57,7 +57,8 @@ df_notion_clean <- df_notion_raw |>
   filter(
     !status %in% c("canceled", "done"),
     title != "New Project",
-    !is.na(driver_linear_id)
+    !is.na(driver_linear_id),
+    !str_detect(ongoing_timebound, "Ongoing")
     ) |> 
   arrange(title) |> 
   # now filter out any that already have a project created

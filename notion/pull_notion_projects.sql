@@ -23,7 +23,8 @@ SELECT
 	d.people AS driver_json,
 	a.people AS approver_json,
 	c.people AS contributors_json,
-	i.people AS informed_json
+	i.people AS informed_json,
+	COALESCE(ot.value, 'empty') AS ongoing_timebound
 FROM notion.page AS p
 LEFT JOIN notion.page_property AS s
 	ON p.id = s.page_id
@@ -45,6 +46,22 @@ LEFT JOIN daci AS c
 LEFT JOIN daci AS i
 	ON p.id = i.page_id
 	AND i.name = 'Informed'
+LEFT JOIN (
+	SELECT
+		p.page_id,
+		p."select" AS value
+	FROM notion.page_property AS p
+	INNER JOIN notion.database_object_property AS dop
+		ON p.id = dop.id
+		AND dop.database_object_id = '7fe0dfb4-f84f-4b3b-8fc3-cca27a621022'
+		AND dop.name = 'Ongoing / Time-bound'
+	WHERE
+		1 = 1
+		AND p._fivetran_deleted IS FALSE
+		AND p.type = 'select'
+		AND p."select" IS NOT NULL
+) AS ot
+	ON p.id = ot.page_id
 	
 WHERE
 	1 = 1
