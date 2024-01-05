@@ -46,8 +46,6 @@ fetch_issues <- function(url, cursor = NULL) {
             nodes {{
               id 
               identifier
-              state {{name}}
-              assignee {{id}}
               attachments {{
                 nodes {{id, url}}
               }}
@@ -71,8 +69,6 @@ fetch_issues <- function(url, cursor = NULL) {
             nodes {{
               id 
               identifier
-              state {{name}}
-              assignee {{id}}
               attachments {{
                 nodes {{id, url}}
               }}
@@ -117,8 +113,6 @@ df_linear_issues <- map_df(
   ~ {
     issue_id <- .x[["id"]]
     issue_identifier <- .x[["identifier"]]
-    assignee <- if (!is.null(.x[["assignee"]])) .x[["assignee"]][["id"]] else NA
-    status <- if (!is.null(.x[["state"]])) .x[["state"]][["name"]] else NA
     
     # Initialize an empty data frame for attachments
     attachments_df <- data.frame(
@@ -154,8 +148,6 @@ df_linear_issues <- map_df(
     data.frame(
       issue_id, 
       issue_identifier, 
-      assignee,
-      status,
       attachments_df
     )
   }, 
