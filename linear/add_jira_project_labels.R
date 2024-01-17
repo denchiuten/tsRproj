@@ -1,7 +1,7 @@
 
 # purpose -----------------------------------------------------------------
-# mark as duplicates any Linear issues that are linked to the same Jira issue
 
+# assign Old Pod labels to issues created from Jira import
 # Starting Stuff ----------------------------------------------------------
 pacman::p_load(
   tidyverse,
@@ -13,66 +13,98 @@ pacman::p_load(
   DBI,
   RPostgreSQL,
   httr,
-  RJSONIO,
-  stringr,
-  googlesheets4
+  RJSONIO
 )
+
 api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
 
-gsheet_url <- "1PyNfJuo56hxLc2R0Rzjw9PW32OQiSFrGEi2nMfV_kyc"
-gs4_auth("dennis@terrascope.com")
-# pull all Linear issues ---------------------------------------------
+# get list of label values ------------------------------------------------
 
-# function to fetch linear issues, paginated
+label_query <- "
+  {
+    issueLabels(
+      filter: { 
+        parent: {name: { eqIgnoreCase: \"JIRA Project\" }}
+      }
+      ) {
+      nodes {id, name}
+      }
+  }"
+
+label_response <- POST(
+  url = api_url,
+  body = toJSON(list(query = label_query)),
+  add_headers(
+    Authorization = key_get("linear"),
+    "Content-Type" = "application/json"
+    )
+  )
+parsed_response <- content(label_response, as = "text") |> 
+  fromJSON(flatten = T)
+
+# convert to data frame 
+df_labels <- bind_rows(parsed_response$data$issueLabels)
+
+# pull all Linear issues without JIRA Project Label---------------------------------------------
+
 fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
       "{{
         issues(
-          filter: {{ 
-            attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{nin: [\"Duplicate\"]}}}}
-          }}
+          filter: {{
+            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"JIRA Project\"}} }} }} }}
+          }}, 
           first: 100
         ) {{
-            pageInfo {{endCursor, hasNextPage}} 
+            pageInfo {{
+              endCursor
+              hasNextPage
+            }} 
             nodes {{
               id 
               identifier
-              state {{name}}
-              assignee {{id}}
+              state {{
+                name
+              }}
               attachments {{
-                nodes {{sourceType, url}}
+                nodes {{
+                  id
+                  url
+                }}
               }}
             }}
           }}
         }}"
-    )
+      )
   } else {
     query <- str_glue(
       "{{
         issues(
-          filter: {{ 
-            attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{nin: [\"Duplicate\"]}}}}
-          }}
-          first: 100
+          filter: {{
+            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"JIRA Project\"}} }} }} }}
+          }}, 
+          first: 100, 
           after: \"{cursor}\"
         ) {{
-            pageInfo {{endCursor, hasNextPage}} 
+            pageInfo {{
+              endCursor
+              hasNextPage
+            }} 
             nodes {{
               id 
               identifier
               state {{name}}
-              assignee {{id}}
               attachments {{
-                nodes {{sourceType, url}}
+                nodes {{id, url}}
               }}
             }}
           }}
         }}"
-    )
+      )
   }
   
   response <- POST(
@@ -110,11 +142,10 @@ df_linear_issues <- map_df(
   ~ {
     issue_id <- .x[["id"]]
     issue_identifier <- .x[["identifier"]]
-    status <- .x[["state"]][["name"]]
     
     # Initialize an empty data frame for attachments
     attachments_df <- data.frame(
-      attachment_source = character(),
+      attachment_id = character(),
       attachment_url = character(),
       stringsAsFactors = FALSE
     )
@@ -125,7 +156,7 @@ df_linear_issues <- map_df(
         attachments_df <- map_df(
           .x[["attachments"]][["nodes"]], 
           ~ data.frame(
-            attachment_source = .x[["sourceType"]],
+            attachment_id = .x[["id"]],
             attachment_url = .x[["url"]],
             stringsAsFactors = FALSE
           )
@@ -136,7 +167,7 @@ df_linear_issues <- map_df(
     # If there are no attachments, create a single row with NAs
     if (nrow(attachments_df) == 0) {
       attachments_df <- data.frame(
-        attachment_source = NA, 
+        attachment_id = NA, 
         attachment_url = NA, 
         stringsAsFactors = FALSE
       )
@@ -146,71 +177,59 @@ df_linear_issues <- map_df(
     data.frame(
       issue_id, 
       issue_identifier, 
-      status,
       attachments_df
     )
   }, 
   .id = NULL
 )
 
-
-# clean up and find duplicates----------------------------------------------------------------
+# clean API query output -----------------------------------------------------
 
 df_linear_clean <- df_linear_issues |> 
   filter(
     str_detect(attachment_url, jira_url_base)
   ) |> 
   mutate(
-    jira_key = str_remove(attachment_url, jira_url_base)
+    jira_key = str_remove(attachment_url, jira_url_base),
+    jira_project = str_extract(jira_key, "^[^-]+"),
   ) |> 
   select(
     linear_issue_id = issue_id,
     linear_issue_key = issue_identifier,
-    linear_status = status,
     jira_key,
-    attachment_source
+    jira_project
   )
 
-df_dupes <- df_linear_clean |> 
-  filter(linear_status != "Duplicate") |> 
-  arrange(jira_key, linear_issue_key) |> 
-  group_by(jira_key) |> 
+
+df_joined <- df_linear_clean |> 
   mutate(
-    total = n(),
-    column = row_number()
+    label = str_glue("{jira_project} Pod")
     ) |> 
-  filter(total > 1) |> 
-  ungroup()
+  inner_join(
+    df_labels,
+    by = c("label" = "name")
+    ) |> 
+  rename(
+    label_id = id,
+    label_name = label
+    )
 
-# now make into a wide data frame with one row per Jira issue 
-# and one column per associated Linear issue
-df_dupes_wide <- df_dupes |> 
-  pivot_wider(
-    id_cols = jira_key,
-    values_from = c(linear_issue_id, linear_issue_key),
-    names_from = attachment_source
-  ) |> 
-  filter(linear_issue_id_import != "NULL") |> 
-  arrange(jira_key)
 
-# write output to GSheet to share with Linear support
-# ss <- gs4_get(gsheet_url)
-# write_sheet(df_dupes_wide, ss, sheet = "duplicate_issues")
+# function to assign labels -----------------------------------------------
 
-# function to mark an issue as a duplicate of another ---------------------
-mark_dupe <- function(issue_id, duplicate_of_id, url) {
+assign_label <- function(issue_id, label_id, url) {
+  
   mutation <- str_glue(
-    "mutation {{
-        issueRelationCreate(
-          input : {{
-            issueId: \"{issue_id}\"
-            relatedIssueId: \"{duplicate_of_id}\"
-            type: duplicate
-          }}
-        ) {{success}}
+  "
+    mutation{{
+      issueAddLabel(
+        id: \"{issue_id}\"
+        labelId: \"{label_id}\" 
+      ) {{
+        success
       }}
-    "
-  )
+    }}
+  ")
   
   response <- POST(
     url = url, 
@@ -219,26 +238,24 @@ mark_dupe <- function(issue_id, duplicate_of_id, url) {
     add_headers(
       Authorization = key_get("linear"), 
       "Content-Type" = "application/json"
+      )
     )
-  )
 }
 
+# now loop ----------------------------------------------------------------
 
-# loop through ------------------------------------------------------------
-
-for (i in 1:nrow(df_dupes_wide)) {
+for (i in 1:nrow(df_joined)) {
   
-  issue_id <- df_dupes_wide$linear_issue_id_import[i]
-  duplicate_of_id <- df_dupes_wide$linear_issue_id_jira[i]
+  issue_id <- df_joined$linear_issue_id[i]
+  label_id <- df_joined$label_id[i]
+  label_name <- df_joined$label_name[i]
+  issue_key <- df_joined$linear_issue_key[i]
   
-  issue_key <- df_dupes_wide$linear_issue_key_import[i]
-  duplicate_of_key <- df_dupes_wide$linear_issue_key_jira[i]
-  
-  response <- mark_dupe(issue_id, duplicate_of_id, api_url)
+  response <- assign_label(issue_id, label_id, api_url)
   # Check response
   if (status_code(response) == 200) {
-    print(str_glue("{issue_key} is now marked as a duplicate of {duplicate_of_key} ({i} of {nrow(df_dupes_wide)})"))
+    print(str_glue("Added label {label_name} to {issue_key} ({i} of {nrow(df_joined)})"))
   } else {
-    print(str_glue("Failed to mark {issue_key} as a duplicate of {duplicate_of_key} ({i} of {nrow(df_dupes_wide)})"))
+    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)} ({i} of {nrow(df_joined)})"))
   }
 }

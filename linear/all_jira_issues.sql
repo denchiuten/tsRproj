@@ -20,6 +20,7 @@ INNER JOIN jra.status AS s
 WHERE
 	1 = 1
 	AND i._fivetran_deleted IS FALSE
+	AND s.name NOT IN ('Canceled', 'Duplicate')
 	AND p.key NOT IN (
 		'AAM',
 		'AG',

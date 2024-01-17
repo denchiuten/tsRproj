@@ -39,7 +39,7 @@ fetch_issues <- function(url, cursor = NULL) {
       "
         {{
           issues(
-            filter: {{state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}}}
+            filter: {{state: {{name: {{nin: [\"Canceled\", \"Duplicate\"]}}}}}}
             first: 100
             ) {{
             pageInfo {{
@@ -72,7 +72,7 @@ fetch_issues <- function(url, cursor = NULL) {
       "
         {{
           issues(
-            filter: {{state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}}}
+            filter: {{state: {{name: {{nin: [\"Canceled\", \"Duplicate\"]}}}}}}
             first: 100
             after: \"{cursor}\"
           ) {{
@@ -336,9 +336,9 @@ for (i in 1:nrow(df_final_orphans)) {
   response <- assign_parent(child_id, parent_id, api_url)
   # Check response
   if (status_code(response) == 200) {
-    print(str_glue("{parent_key} is now the parent of {child_key}"))
+    print(str_glue("{parent_key} is now the parent of {child_key} ({i} of {nrow(df_final_orphans)})"))
   } else {
-    print(str_glue("Failed to update issue {child_key}: Error {status_code(response)}"))
+    print(str_glue("Failed to update issue {child_key}: Error {status_code(response)} ({i} of {nrow(df_final_orphans)})"))
   }
 }
 # x <- df_orphans |> distinct(jira_parent_key)
