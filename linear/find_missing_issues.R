@@ -215,8 +215,7 @@ df_linear_issues <- map_df(
 # filter the Linear list for only those with Jira url links
 df_linear_filtered <- df_linear_issues |> 
   filter(
-    str_detect(attachment_url, jira_url_base),
-    status != "Duplicate"
+    str_detect(attachment_url, jira_url_base)
     ) |> 
   mutate(
     jira_key = str_remove(attachment_url, jira_url_base)
@@ -232,47 +231,24 @@ df_linear_filtered <- df_linear_issues |>
 
 # find jira issues with no corresponding issue in Linear
 df_missing <- df_jira_raw |> 
-  anti_join(df_linear_filtered, by = c("issue_key" = "jira_key"))
+  anti_join(
+    df_linear_filtered, 
+    by = c("issue_key" = "jira_key")
+    )
+
+df_epics <- df_jira_raw |> 
+  filter(issue_type == "Epic") |> 
+  inner_join(
+    df_linear_filtered,
+    by = c("issue_key" = "jira_key")
+  )
 
 # save output to google sheet
 ss <- gs4_get(gsheet_url)
 write_sheet(df_missing, ss, sheet = as.character(today()))
 
 
-# find and fix duplicate issues that aren't marked as Duplicate in Linear -------------------------------------------
 
-df_dupes <- df_linear_filtered |> 
-  filter(status != "Duplicate") |> 
-  arrange(jira_key, linear_key) |> 
-  group_by(jira_key) |> 
-  mutate(n = row_number()) |> 
-  ungroup()
-
-df_dupes_wide <- df_dupes |> 
-  pivot_wider(
-    id_cols = jira_key,
-    values_from = c(linear_id, linear_key),
-    names_from = n
-  ) |> 
-  filter(linear_id_2 != "NULL")
-
-# loop_time
-for (i in 1:nrow(df_dupes_wide)) {
-  
-  issue_id <- df_dupes_wide$linear_id_2[i]
-  duplicate_of_id <- df_dupes_wide$linear_id_1[i]
-  
-  issue_key <- df_dupes_wide$linear_key_2[i]
-  duplicate_of_key <- df_dupes_wide$linear_key_1[i]
-  
-  response <- mark_dupe(issue_id, duplicate_of_id, api_url)
-  # Check response
-  if (status_code(response) == 200) {
-    print(str_glue("{issue_key} is now marked as a duplicate of {duplicate_of_key}"))
-  } else {
-    print(str_glue("Failed to mark {issue_key} as a duplicate of {duplicate_of_key}"))
-  }
-}
 
 # spot check for one issue --------------------------------------------------------------------
 
@@ -305,6 +281,7 @@ x <- df_plat_1055$data$issue
 
 
 # fix parent child mappings -----------------------------------------------
+
 # get rid of unnec columns
 df_linear_clean <- df_linear_filtered |> 
   select(linear_id, linear_key, jira_key, linear_parent_id) |> 
