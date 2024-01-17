@@ -28,8 +28,7 @@ source("linear_functions.R")
 
 con <- aws_connect()
 df_jira_raw <- dbFetch(dbSendQuery(con, jira_query))
-df_jira_stories <- df_jira_raw |> 
-  filter(issue_type == "Story")
+
 # GraphQL query -----------------------------------------------------------
 
 fetch_issues <- function(url, cursor = NULL) {
