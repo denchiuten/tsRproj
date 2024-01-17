@@ -18,9 +18,6 @@ pacman::p_load(
   googlesheets4
   
 )
-library(googlesheets4)
-pacman::p_load_current_gh("denchiuten/tsViz")
-theme_set(theme_ts())
 
 sql_query <- read_file("all_jira_issues.sql")
 api_url <- "https://api.linear.app/graphql"
@@ -41,7 +38,10 @@ fetch_issues <- function(url, cursor = NULL) {
     query <- str_glue(
       "
         {{
-          issues(first: 100) {{
+          issues(
+            filter: {{state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}}}
+            first: 100
+            ) {{
             pageInfo {{
               endCursor
               hasNextPage
@@ -71,7 +71,11 @@ fetch_issues <- function(url, cursor = NULL) {
     query <- str_glue(
       "
         {{
-          issues(first: 100, after: \"{cursor}\") {{
+          issues(
+            filter: {{state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}}}
+            first: 100
+            after: \"{cursor}\"
+          ) {{
             pageInfo {{
               endCursor
               hasNextPage
@@ -138,36 +142,6 @@ assign_parent <- function(child_id, parent_id, url) {
   )
 }
 
-# mark an issue as a duplicate of another
-mark_dupe <- function(issue_id, duplicate_of_id, url) {
-  mutation <- str_glue(
-    "
-      mutation {{
-        issueRelationCreate(
-          input : {{
-            issueId: \"{issue_id}\"
-            relatedIssueId: \"{duplicate_of_id}\"
-            type: duplicate
-          }}
-        ) {{
-          success
-        }}
-      }}
-    "
-  )
-  
-  
-  
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-    )
-  )
-}
 # run loop to get all Linear issues with Jira URLs attached----------------------------------------------------------------
 
 # Initialize variables for pagination
@@ -196,7 +170,6 @@ df_linear_issues <- map_df(
   
       # Initialize an empty data frame for attachments
       attachments_df <- data.frame(
-        attachment_id = character(),
         attachment_url = character(),
         stringsAsFactors = FALSE
       )
@@ -207,7 +180,6 @@ df_linear_issues <- map_df(
           attachments_df <- map_df(
             .x[["attachments"]][["nodes"]], 
             ~ data.frame(
-                attachment_id = .x[["id"]],
                 attachment_url = .x[["url"]],
                 stringsAsFactors = FALSE
             )
@@ -218,7 +190,6 @@ df_linear_issues <- map_df(
       # If there are no attachments, create a single row with NAs
       if (nrow(attachments_df) == 0) {
         attachments_df <- data.frame(
-          attachment_id = NA, 
           attachment_url = NA, 
           stringsAsFactors = FALSE
         )
