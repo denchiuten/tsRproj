@@ -22,6 +22,7 @@ api_url <- "https://api.linear.app/graphql"
 jira_query <- read_file("jira_issues_with_fix_versions.sql")
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
 
+source("linear_functions.R")
 # pull jira data from redshift --------------------------------------------
 
 con <- aws_connect()
