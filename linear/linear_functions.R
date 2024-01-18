@@ -1,3 +1,6 @@
+
+
+# get_labels --------------------------------------------------------------
 get_labels <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
@@ -29,4 +32,28 @@ get_labels <- function(url, cursor = NULL) {
   )
   parsed_response <- content(response, as = "text") |> 
     fromJSON(flatten = T)
+}
+
+add_estimate <- function(issue_id, points, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueUpdate(
+        id: \"{issue_id}\"
+        input: {{
+          estimate: {points}
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
 }
