@@ -21,7 +21,7 @@ api_url <- "https://api.linear.app/graphql"
 
 jira_query <- read_file("linear_jira_user_map.sql")
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
-
+source("linear_functions.R")
 
 # redshift_query ----------------------------------------------------------
 con <- aws_connect()
@@ -175,33 +175,6 @@ df_joined <- df_linear_clean |>
     by = c("jira_key" = "jira_issue_key")
   ) |> 
   arrange(email, linear_issue_key)
-
-# function to assign assignees -----------------------------------------------
-
-assign_assignee <- function(issue_id, user_id, url) {
-  
-  mutation <- str_glue(
-    "mutation{{
-      issueUpdate(
-        id: \"{issue_id}\"
-        input: {{
-          assigneeId: \"{user_id}\" 
-        }}
-        ) {{success}}
-      }}"
-  )
-  
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-    )
-  )
-}
-
 
 # loop time ---------------------------------------------------------------
 

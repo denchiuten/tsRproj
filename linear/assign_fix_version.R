@@ -222,32 +222,6 @@ df_with_labels <- df_joined |>
     by = c("version_name" = "jira_version_name")
     )
 
-
-# function to assign labels -----------------------------------------------
-
-assign_label <- function(issue_id, label_id, url) {
-
-  mutation <- str_glue(
-    "mutation{{
-      issueAddLabel(
-        id: \"{issue_id}\"
-        labelId: \"{label_id}\" 
-        ) {{
-        success
-        }}
-      }}"
-    )
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-    )
-  )
-}
-
 # run loop to assign label to every issue ---------------------------------
 
 for (i in 1:nrow(df_with_labels)) {

@@ -1,6 +1,4 @@
 
-
-# get_labels --------------------------------------------------------------
 get_labels <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
     query <- str_glue(
@@ -47,6 +45,78 @@ add_estimate <- function(issue_id, points, url) {
       }}"
   )
   
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
+
+assign_assignee <- function(issue_id, user_id, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueUpdate(
+        id: \"{issue_id}\"
+        input: {{
+          assigneeId: \"{user_id}\" 
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
+
+assign_cycle <- function(issue_id, cycle_id, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueUpdate(
+        id: \"{issue_id}\"
+        input: {{
+          cycleId: \"{cycle_id}\" 
+        }}
+        ) {{
+        success
+        }}
+      }}"
+  )
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}
+
+assign_label <- function(issue_id, label_id, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueAddLabel(
+        id: \"{issue_id}\"
+        labelId: \"{label_id}\" 
+        ) {{
+        success
+        }}
+      }}"
+  )
   response <- POST(
     url = url, 
     body = toJSON(list(query = mutation)), 

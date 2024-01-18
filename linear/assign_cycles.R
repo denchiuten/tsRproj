@@ -22,6 +22,7 @@ api_url <- "https://api.linear.app/graphql"
 jira_query <- read_file("jira_sprint_issues.sql")
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
 
+source("linear_functions.R")
 # pull jira data from redshift --------------------------------------------
 
 con <- aws_connect()
@@ -187,34 +188,6 @@ df_joined <- df_linear_clean |>
     df_jira_clean, 
     by = c("jira_key" = "issue_key")
   )
-
-
-# function to assign labels -----------------------------------------------
-
-assign_cycle <- function(issue_id, cycle_id, url) {
-  
-  mutation <- str_glue(
-    "mutation{{
-      issueUpdate(
-        id: \"{issue_id}\"
-        input: {{
-          cycleId: \"{cycle_id}\" 
-        }}
-        ) {{
-        success
-        }}
-      }}"
-  )
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-    )
-  )
-}
 
 # run loop to assign label to every issue ---------------------------------
 
