@@ -1,6 +1,7 @@
 SELECT
 	n.id AS notion_user_id,
-	l.id AS linear_user_id
+	l.id AS linear_user_id,
+	n.email
 FROM notion.users AS n
 INNER JOIN linear.users AS l
 	ON LOWER(n.email) = LOWER(l.email)
