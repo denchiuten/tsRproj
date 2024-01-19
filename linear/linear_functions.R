@@ -134,7 +134,6 @@ assign_label <- function(issue_id, label_id, url) {
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
-# function to mark an issue as a duplicate of another ---------------------
 mark_dupe <- function(issue_id, duplicate_of_id, url) {
   mutation <- str_glue(
     "mutation {{
@@ -149,6 +148,33 @@ mark_dupe <- function(issue_id, duplicate_of_id, url) {
     "
   )
   
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}
+
+assign_project <- function(issue_id, project_id, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueUpdate(
+        id: \"{issue_id}\"
+        input: {{
+          projectId: \"{project_id}\" 
+        }}
+        ) {{
+        success
+        }}
+      }}"
+  )
   response <- POST(
     url = url, 
     body = toJSON(list(query = mutation)), 
