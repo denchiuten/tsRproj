@@ -18,7 +18,7 @@ pacman::p_load(
 
 api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
-
+source("linear_functions.R")
 # get list of label values ------------------------------------------------
 
 label_query <- "
@@ -214,33 +214,6 @@ df_joined <- df_linear_clean |>
     label_name = label
     )
 
-
-# function to assign labels -----------------------------------------------
-
-assign_label <- function(issue_id, label_id, url) {
-  
-  mutation <- str_glue(
-  "
-    mutation{{
-      issueAddLabel(
-        id: \"{issue_id}\"
-        labelId: \"{label_id}\" 
-      ) {{
-        success
-      }}
-    }}
-  ")
-  
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-      )
-    )
-}
 
 # now loop ----------------------------------------------------------------
 
