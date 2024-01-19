@@ -8,6 +8,7 @@ pacman::p_load(
   lubridate,
   scales,
   zoo,
+  zoo,
   patchwork,
   keyring,
   DBI,
@@ -24,6 +25,7 @@ api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
 gsheet_url <- "https://docs.google.com/spreadsheets/d/1xD75YN5hLfgm5gyW7JQRPJbrVLb1DEQ3qhUSA8v5V1Q/edit#gid=0"
 gs4_auth("dennis@terrascope.com")
+source("linear_functions.R")
 
 # pull raw data -----------------------------------------------------------
 
@@ -114,33 +116,7 @@ fetch_issues <- function(url, cursor = NULL) {
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
-# assign parent to child issues in Linear
-assign_parent <- function(child_id, parent_id, url) {
-  
-  mutation <- str_glue(
-    "
-    mutation{{
-      issueUpdate(
-        id: \"{child_id}\"
-        input: {{
-          parentId: \"{parent_id}\" 
-        }}
-        ) {{
-        success
-      }}
-    }}
-  ")
-  
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-    )
-  )
-}
+
 
 # run loop to get all Linear issues with Jira URLs attached----------------------------------------------------------------
 

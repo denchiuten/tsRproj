@@ -20,7 +20,7 @@ pacman::p_load(
 api_url <- "https://api.linear.app/graphql"
 
 jira_query <- read_file("jira_issues_under_epics.sql")
-linear_projects_query <- read_file("linear_project_query.sql")
+# linear_projects_query <- read_file("linear_project_query.sql")
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
 
 source("linear_functions.R")
@@ -32,10 +32,10 @@ ss <- gs4_get(gsheet_url)
 
 con <- aws_connect()
 df_jira_raw <- dbFetch(dbSendQuery(con, jira_query))
-df_linear_projects <- dbFetch(dbSendQuery(con, linear_projects_query))
+# df_linear_projects <- dbFetch(dbSendQuery(con, linear_projects_query))
 
 
-# function to fetch linear issues, paginated ------------------------------
+# function to fetch linear issues with no assigned project, paginated ------------------------------
 
 fetch_issues <- function(url, cursor = NULL) {
   if(is.null(cursor)) {
@@ -97,6 +97,28 @@ fetch_issues <- function(url, cursor = NULL) {
   )
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
+
+# run a loop to fetch projects--------------------------------------------------------------
+
+all_projects <- list()
+has_next_page <- TRUE
+cursor <- NULL
+
+while(has_next_page == TRUE) {
+  response_data <- fetch_projects(api_url, cursor)
+  all_projects <- c(all_projects, response_data$data$projects$nodes)
+  cursor <- response_data$data$projects$pageInfo$endCursor
+  has_next_page <- response_data$data$projects$pageInfo$hasNextPage
+}
+
+df_linear_projects <- map_df(
+  all_projects, 
+  ~ data.frame(
+    linear_project_id = .x[["id"]],
+    linear_project_name = .x[["name"]],
+    stringsAsFactors = FALSE
+  )
+)
 
 # run a loop to fetch issues with pagination--------------------------------------------------------------
 
