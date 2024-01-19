@@ -1,8 +1,10 @@
 SELECT
+	map.jira_sprint_id,
 	p.key AS jira_project,
 	s.name AS sprint_name,
 	s.start_date::DATE AS jira_start_date,
 	s.end_date::DATE AS jira_end_date,
+	map.linear_cycle_id,
 	t.key AS linear_team,
 	c.name AS linear_cycle_name,
 	c.starts_at::DATE AS linear_start_date,
