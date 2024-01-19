@@ -117,8 +117,10 @@ df_linear_projects <- map_df(
     linear_project_id = .x[["id"]],
     linear_project_name = .x[["name"]],
     stringsAsFactors = FALSE
-  )
-)
+    )
+  ) |> 
+  mutate(across(linear_project_name, ~str_trim(.)))
+  
 
 # run a loop to fetch issues with pagination--------------------------------------------------------------
 
@@ -201,22 +203,23 @@ df_missing_epics <- df_linear_clean |>
   inner_join(
     df_jira_raw,
     by = c("jira_key" = "child_key")
-  )
+  ) |> 
+  mutate(epic = str_trim(parent_summary))
 
 df_joined <- df_missing_epics |> 
   inner_join(
     df_linear_projects,
-    by = c("parent_summary" = "linear_project_name")
+    by = c("epic" = "linear_project_name")
     ) |> 
-  arrange(parent_summary, linear_issue_key)
+  arrange(epic, linear_issue_key)
 
 df_no_project_match <- df_missing_epics |> 
   anti_join(
     df_linear_projects,
-    by = c("parent_summary" = "linear_project_name")
+    by = c("epic" = "linear_project_name")
   )
 
-write_sheet(df_no_project_match, ss)
+write_sheet(df_no_project_match, ss, sheet = str_glue("df_no_project_match}"))
 # run loop to assign label to every issue ---------------------------------
 
 df_joined$error <- NA
