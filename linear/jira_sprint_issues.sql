@@ -9,7 +9,7 @@ SELECT
 FROM jra.issue AS i
 INNER JOIN jra.project AS p
 	ON i.project = p.id
-	AND p.key NOT IN ('CUSIMP', 'DBCLEAN')
+	AND p.key NOT IN ('CUSIMP')
 INNER JOIN jra.vw_latest_issue_multiselect_value AS f
 	ON i.id = f.issue_id
 	AND f.field_id = 'customfield_10020' -- custom field_id for sprint
