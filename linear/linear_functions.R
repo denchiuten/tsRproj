@@ -127,3 +127,29 @@ assign_label <- function(issue_id, label_id, url) {
     )
   )
 }
+
+# function to mark an issue as a duplicate of another ---------------------
+mark_dupe <- function(issue_id, duplicate_of_id, url) {
+  mutation <- str_glue(
+    "mutation {{
+        issueRelationCreate(
+          input : {{
+            issueId: \"{issue_id}\"
+            relatedIssueId: \"{duplicate_of_id}\"
+            type: duplicate
+          }}
+        ) {{success}}
+      }}
+    "
+  )
+  
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+}

@@ -19,9 +19,7 @@ pacman::p_load(
 )
 api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
-
-gsheet_url <- "1PyNfJuo56hxLc2R0Rzjw9PW32OQiSFrGEi2nMfV_kyc"
-gs4_auth("dennis@terrascope.com")
+source("linear_functions.R")
 # pull all Linear issues ---------------------------------------------
 
 # function to fetch linear issues, paginated
@@ -192,36 +190,6 @@ df_dupes_wide <- df_dupes |>
   ) |> 
   filter(linear_issue_id_import != "NULL") |> 
   arrange(jira_key)
-
-# write output to GSheet to share with Linear support
-# ss <- gs4_get(gsheet_url)
-# write_sheet(df_dupes_wide, ss, sheet = "duplicate_issues")
-
-# function to mark an issue as a duplicate of another ---------------------
-mark_dupe <- function(issue_id, duplicate_of_id, url) {
-  mutation <- str_glue(
-    "mutation {{
-        issueRelationCreate(
-          input : {{
-            issueId: \"{issue_id}\"
-            relatedIssueId: \"{duplicate_of_id}\"
-            type: duplicate
-          }}
-        ) {{success}}
-      }}
-    "
-  )
-  
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-    )
-  )
-}
 
 
 # loop through ------------------------------------------------------------
