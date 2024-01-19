@@ -5,7 +5,12 @@ SELECT
 	s.id AS sprint_id,
 	s.start_date::DATE AS start_date,
 	s.end_date::DATE AS end_date,
-	linear_cycle_id
+	map.linear_cycle_id,
+	c.name As cycle_name,
+	c.starts_at::DATE AS cycle_start_date,
+	c.ends_at::DATE AS cycle_end_date,
+	t.name AS team_name,
+	t.key AS team_key
 FROM jra.issue AS i
 INNER JOIN jra.project AS p
 	ON i.project = p.id
@@ -19,6 +24,11 @@ INNER JOIN jra.sprint AS s
 	AND s.start_date >= '2023-12-20'
 INNER JOIN plumbing.jira_sprint_to_linear_cycle AS map
 	ON s.id = map.jira_sprint_id
+INNER JOIN linear.cycle AS c
+	ON map.linear_cycle_id = c.id
+	AND c._fivetran_deleted IS FALSE
+INNER JOIN linear.team AS t
+	ON c.team_id = t.id
 WHERE
 	1 = 1
 	AND i._fivetran_deleted IS FALSE
