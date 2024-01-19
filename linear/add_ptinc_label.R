@@ -18,11 +18,10 @@ pacman::p_load(
   stringr,
   googlesheets4
 )
-# pacman::p_load_current_gh("denchiuten/tsViz")
-# theme_set(theme_ts())
+
 api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
-
+source("linear_functions.R")
 # GraphQL query -----------------------------------------------------------
 
 fetch_issues <- function(url, cursor = NULL) {
@@ -31,7 +30,8 @@ fetch_issues <- function(url, cursor = NULL) {
       "{{
         issues(
           filter: {{ 
-            team: {{key: {{in: [\"PLAT\"] }} }}
+            attachments: {{url: {{contains: \"{jira_url_base}PTINC\"}} }}
+            labels: {{every: {{id: {{neq: \"049096e6-b6a2-4f56-b9ea-e5c643e9e279\"}} }} }}
           }} 
           first: 100
         ) {{
@@ -51,7 +51,8 @@ fetch_issues <- function(url, cursor = NULL) {
       "{{
         issues(
           filter: {{ 
-            team: {{key: {{in: [\"PLAT\"] }} }}
+            attachments: {{url: {{contains: \"{jira_url_base}PTINC\"}} }}
+            labels: {{every: {{id: {{neq: \"049096e6-b6a2-4f56-b9ea-e5c643e9e279\"}} }} }}
           }} 
           first: 100 
           after: \"{cursor}\"
@@ -161,32 +162,6 @@ df_linear_clean <- df_linear_issues |>
   ) |> 
   filter(str_detect(jira_key, "PTINC"))
 
-# function to assign labels -----------------------------------------------
-
-assign_label <- function(issue_id, label_id, url) {
-  
-  mutation <- str_glue(
-    "
-    mutation{{
-      issueAddLabel(
-        id: \"{issue_id}\"
-        labelId: \"{label_id}\" 
-      ) {{
-        success
-      }}
-    }}
-  ")
-  
-  response <- POST(
-    url = url, 
-    body = toJSON(list(query = mutation)), 
-    encode = "json", 
-    add_headers(
-      Authorization = key_get("linear"), 
-      "Content-Type" = "application/json"
-    )
-  )
-}
 
 # now loop ----------------------------------------------------------------
 label_id <- "049096e6-b6a2-4f56-b9ea-e5c643e9e279"

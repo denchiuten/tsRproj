@@ -38,8 +38,9 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+            team: {{key: {{in: [\"CCF\", \"PLAT\", \"PCF\", \"QA\", \"DSCI\"] }} }}
             labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Issue Type\"}} }} }} }}
-            state: {{name: {{nin: [\"Duplicate\"]}}}}
+            state: {{name: {{nin: [\"Duplicate\", \"Done\", \"Rejected\", \"Graveyard\", \"Cancelled\", \"Canceled\"]}}}}
           }} 
           first: 100
         ) {{
@@ -60,8 +61,9 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
+            team: {{key: {{in: [\"CCF\", \"PLAT\", \"PCF\", \"QA\", \"DSCI\"] }} }}
             labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Issue Type\"}} }} }} }}
-            state: {{name: {{nin: [\"Duplicate\"]}}}}
+            state: {{name: {{nin: [\"Duplicate\", \"Done\", \"Rejected\", \"Graveyard\", \"Cancelled\", \"Canceled\"]}}}}
           }} 
           first: 100 
           after: \"{cursor}\"
