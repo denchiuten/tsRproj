@@ -54,6 +54,7 @@ add_estimate <- function(issue_id, points, url) {
       "Content-Type" = "application/json"
     )
   )
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
 assign_assignee <- function(issue_id, user_id, url) {
@@ -78,6 +79,8 @@ assign_assignee <- function(issue_id, user_id, url) {
       "Content-Type" = "application/json"
     )
   )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
 assign_cycle <- function(issue_id, cycle_id, url) {
@@ -103,6 +106,8 @@ assign_cycle <- function(issue_id, cycle_id, url) {
       "Content-Type" = "application/json"
     )
   )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
 assign_label <- function(issue_id, label_id, url) {
@@ -126,6 +131,7 @@ assign_label <- function(issue_id, label_id, url) {
       "Content-Type" = "application/json"
     )
   )
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
 # function to mark an issue as a duplicate of another ---------------------
@@ -152,4 +158,6 @@ mark_dupe <- function(issue_id, duplicate_of_id, url) {
       "Content-Type" = "application/json"
     )
   )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }

@@ -37,7 +37,7 @@ fetch_issues <- function(url, cursor = NULL) {
       "{{
         issues(
           filter: {{ 
-            state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}
+            state: {{name: {{nin: [\"Canceled\", \"Duplicate\"]}}}}
             team: {{key: {{in: [\"CCF\", \"PLAT\", \"DSCI\", \"QA\"] }} }}
           }} 
           first: 100
@@ -59,7 +59,7 @@ fetch_issues <- function(url, cursor = NULL) {
       "{{
         issues(
           filter: {{ 
-            state: {{name: {{nin: [\"Done\", \"Canceled\", \"Duplicate\"]}}}}
+            state: {{name: {{nin: [\"Canceled\", \"Duplicate\"]}}}}
             team: {{key: {{in: [\"CCF\", \"PLAT\", \"DSCI\", \"QA\"] }} }}
           }} 
           first: 100 
@@ -173,6 +173,8 @@ df_linear_clean <- df_linear_issues |>
 # in Linear, an issue can only be assigned to one cycle at a time, so filter
 # for the earliest sprint each issue is assigned to in Jira
 df_jira_clean <- df_jira_raw |> 
+  # filter to only include cycles that have not yet ended
+  filter(cycle_end_date >= today()) |> 
   arrange(issue_key, start_date) |>
   group_by(issue_key) |> 
   mutate(row = row_number()) |> 
@@ -193,15 +195,14 @@ for (i in 1:nrow(df_joined)) {
   
   issue_id <- df_joined$linear_id[i]
   cycle_id <- df_joined$linear_cycle_id[i]
-  # label_name <- df_with_labels$linear_label_name[i]
   issue_key <- df_joined$linear_key[i]
   
   response <- assign_cycle(issue_id, cycle_id, api_url)
   
   # Check response
-  if (status_code(response) == 200) {
+  if (!is.null(response$data)) {
     print(str_glue("Assigned {issue_key} to cycle ({i} of {nrow(df_joined)})"))
   } else {
-    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)}"))
+    print(str_glue("Failed to update issue {issue_key}: Error \"{response$errors[[1]]$extensions$userPresentableMessage}\""))
   }
 }
