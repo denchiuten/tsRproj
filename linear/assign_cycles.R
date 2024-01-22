@@ -38,7 +38,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             state: {{name: {{nin: [\"Canceled\", \"Duplicate\"]}}}}
-            team: {{key: {{in: [\"CCF\", \"PLAT\", \"DSCI\", \"QA\"] }} }}
+            team: {{key: {{in: [\"DSCI\"] }} }}
           }} 
           first: 100
         ) {{
@@ -60,7 +60,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             state: {{name: {{nin: [\"Canceled\", \"Duplicate\"]}}}}
-            team: {{key: {{in: [\"CCF\", \"PLAT\", \"DSCI\", \"QA\"] }} }}
+            team: {{key: {{in: [\"DSCI\"] }} }}
           }} 
           first: 100 
           after: \"{cursor}\"

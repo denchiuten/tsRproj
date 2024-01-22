@@ -30,7 +30,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{nin: [\"Duplicate\"]}}}}
+            state: {{name: {{nin: [\"Duplicate\", \"Done\", \"Canceled\"] }} }}
           }}
           first: 100
         ) {{
@@ -53,7 +53,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{nin: [\"Duplicate\"]}}}}
+            state: {{name: {{nin: [\"Duplicate\", \"Done\", \"Canceled\"] }} }}
           }}
           first: 100
           after: \"{cursor}\"
@@ -194,7 +194,7 @@ df_dupes_wide <- df_dupes |>
 
 # loop through ------------------------------------------------------------
 
-for (i in 1:nrow(df_dupes_wide)) {
+for (i in 5:nrow(df_dupes_wide)) {
   
   issue_id <- df_dupes_wide$linear_issue_id_import[i]
   duplicate_of_id <- df_dupes_wide$linear_issue_id_jira[i]

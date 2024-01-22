@@ -175,6 +175,6 @@ for (i in 1:nrow(df_linear_clean)) {
   if (status_code(response) == 200) {
     print(str_glue("Added label to {issue_key} ({i} of {nrow(df_linear_clean)})"))
   } else {
-    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)} ({i} of {nrow(df_linear_clean)})"))
+    print(str_glue("Failed to update issue {issue_key}: Error {response$errors[[1]]$extensions$userPresentableMessage} ({i} of {nrow(df_linear_clean)})"))
   }
 }

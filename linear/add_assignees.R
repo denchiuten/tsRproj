@@ -188,9 +188,9 @@ for (i in 1:nrow(df_joined)) {
   response <- assign_assignee(issue_id, user_id, api_url)
   
   # Check response
-  if (status_code(response) == 200) {
+  if (is.null(response$errors)) {
     print(str_glue("Assigned {issue_key} to {user_email} ({i} of {nrow(df_joined)})"))
   } else {
-    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)}"))
+    print(str_glue("Failed to update issue {issue_key}: Error {response$errors[[1]]$extensions$userPresentableMessage}"))
   }
 }

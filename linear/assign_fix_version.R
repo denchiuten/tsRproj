@@ -38,8 +38,7 @@ fetch_issues <- function(url, cursor = NULL) {
       "{{
         issues(
           filter: {{ 
-            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Release Version\"}} }} }} }},
-            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            team: {{key: {{in: [\"CCF\", \"PLAT\", \"QA\"] }} }}
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
           }},
           first: 100
@@ -69,16 +68,7 @@ fetch_issues <- function(url, cursor = NULL) {
       "{{
         issues(
           filter: {{ 
-            labels: {{
-              every: {{
-                parent: {{
-                  name: {{
-                    neqIgnoreCase: \"Release Version\"
-                  }}
-                }}
-              }}
-            }},
-            team: {{key: {{in: [\"CCF\", \"PLAT\"] }} }}
+            team: {{key: {{in: [\"CCF\", \"PLAT\", \"QA\"] }} }}
             attachments: {{url: {{contains: \"{jira_url_base}\"}}}}
           }},
           first: 100, 
@@ -235,9 +225,9 @@ for (i in 1:nrow(df_with_labels)) {
   response <- assign_label(issue_id, label_id, api_url)
   
   # Check response
-  if (status_code(response) == 200) {
+  if (is.null(response$errors)) {
     print(str_glue("Added label {label_name} to {issue_key} ({i} of {nrow(df_with_labels)})"))
   } else {
-    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)}"))
+    print(str_glue("Failed to update issue {issue_key}: Error {response$errors[[1]]$extensions$userPresentableMessage}"))
   }
 }
