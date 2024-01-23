@@ -246,3 +246,30 @@ fetch_projects <- function(url, cursor = NULL) {
   )
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
+
+update_state <- function(issue_id, state_id, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueUpdate(
+        id: \"{issue_id}\"
+        input: {{
+          stateId: \"{state_id}\"
+        }}
+        ) {{
+        success
+        }}
+      }}"
+  )
+  response <- POST(
+    url = url, 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}

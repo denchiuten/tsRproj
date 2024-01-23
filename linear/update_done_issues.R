@@ -1,7 +1,6 @@
-
 # purpose -----------------------------------------------------------------
 
-# apply Customer Name - ID labels
+# mark Linear issues Done if they're Done in Jira
 
 # Starting Stuff ----------------------------------------------------------
 pacman::p_load(
@@ -21,50 +20,19 @@ pacman::p_load(
 
 api_url <- "https://api.linear.app/graphql"
 jira_url_base <- "https://gpventure.atlassian.net/browse/"
-jira_query <- read_file("jira_customer_name.sql")
+jira_query <- read_file("jira_done.sql")
+linear_states_query <- read_file("linear_done_state_ids.sql")
 source("linear_functions.R")
-gsheet_url <- "https://docs.google.com/spreadsheets/d/1NOkzqJeHA2n45KjHm_4ddj6q7-GUBDyzp22JG_a9m8U/edit#gid=0"
-gs4_auth("dennis@terrascope.com")
-ss <- gs4_get(gsheet_url)
 
 
-# run redshift query ------------------------------------------------------
+# redshift ----------------------------------------------------------------
 
 con <- aws_connect()
+
 df_jira_raw <- dbFetch(dbSendQuery(con, jira_query))
+df_linear_state_ids <- dbFetch(dbSendQuery(con, linear_states_query))
 
-
-# pull all label values and write them to gsheet --------------------------
-
-all_labels <- list()
-has_next_page <- TRUE
-cursor <- NULL
-
-while(has_next_page == TRUE) {
-  response_data <- get_labels(api_url, cursor)
-  all_labels <- c(all_labels, response_data$data$issueLabels$nodes)
-  cursor <- response_data$data$issueLabels$pageInfo$endCursor
-  has_next_page <- response_data$data$issueLabels$pageInfo$hasNextPage
-}
-
-df_labels <- map_df(
-  all_labels, 
-  ~ data.frame(
-    id = .x[["id"]],
-    name = .x[["name"]],
-    stringsAsFactors = FALSE
-  )
-) |> 
-  arrange(name)
-
-write_sheet(df_labels, ss, "df_labels")
-
-# now pull map ------------------------------------------------------------
-
-df_map <- read_sheet(ss, sheet = "map")
-
-
-# pull all Linear issues --------------------------------------------------
+# pull all Linear issues ---------------------------------------------
 
 # function to fetch linear issues, paginated
 fetch_issues <- function(url, cursor = NULL) {
@@ -74,8 +42,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{nin: [\"Duplicate\"] }} }}
-            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Customer Name - ID\"}} }} }} }}
+            state: {{name: {{nin: [\"Duplicate\", \"Done\", \"Canceled\"] }} }}
           }}
           first: 100
         ) {{
@@ -96,8 +63,7 @@ fetch_issues <- function(url, cursor = NULL) {
         issues(
           filter: {{ 
             attachments: {{url: {{contains: \"{jira_url_base}\"}} }}
-            state: {{name: {{nin: [\"Duplicate\"] }} }}
-            labels: {{every: {{parent: {{name: {{neqIgnoreCase: \"Customer Name - ID\"}} }} }} }}
+            state: {{name: {{nin: [\"Duplicate\", \"Done\", \"Canceled\"] }} }}
           }}
           first: 100
           after: \"{cursor}\"
@@ -125,6 +91,7 @@ fetch_issues <- function(url, cursor = NULL) {
   )
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
+
 
 # run a loop to fetch issues with pagination--------------------------------------------------------------
 
@@ -187,39 +154,45 @@ df_linear_issues <- map_df(
 )
 
 
-# prep final data ---------------------------------------------------------
+# final data prep ---------------------------------------------------------
 
 df_linear_clean <- df_linear_issues |> 
   filter(
     str_detect(attachment_url, jira_url_base)
   ) |> 
   mutate(
-    jira_key = str_remove(attachment_url, jira_url_base)
+    jira_key = str_remove(attachment_url, jira_url_base),
+    linear_team = str_extract(issue_identifier, "^[A-Za-z]+")
   ) |> 
   select(
     linear_issue_id = issue_id,
     linear_issue_key = issue_identifier,
-    jira_key
-  )
+    jira_key,
+    linear_team
+  ) |> 
+  arrange(linear_issue_key)
 
 df_joined <- df_linear_clean |> 
   inner_join(df_jira_raw, by = c("jira_key" = "jira_issue_key")) |> 
-  inner_join(df_map, by = "customer_name") |> 
-  arrange(label_name, linear_issue_key)
-  
-# now loop ----------------------------------------------------------------
+  inner_join(df_linear_state_ids, by = c("linear_team" = "team_key"))
+
+
+
+# loop to fix -------------------------------------------------------------
+
 for (i in 1:nrow(df_joined)) {
   
   issue_id <- df_joined$linear_issue_id[i]
+  state_id <- df_joined$state_id[i]
   issue_key <- df_joined$linear_issue_key[i]
-  label_name <- df_joined$label_name[i]
-  label_id <- df_joined$label_id[i]
-
-  response <- assign_label(issue_id, label_id, api_url)
+  
+  response <- update_state(issue_id, state_id, api_url)
+  
   # Check response
-  if (!is.null(response$data)) {
-    print(str_glue("Added label {label_name} to {issue_key} ({i} of {nrow(df_joined)})"))
+  if (is.null(response$errors)) {
+    print(str_glue("Marked {issue_key} as Done ({i} of {nrow(df_joined)})"))
   } else {
-    print(str_glue("Failed to update issue {issue_key}: Error {response$errors[[1]]$extensions$userPresentableMessage} ({i} of {nrow(df_joined)})"))
+    print(str_glue("Failed to update issue {issue_key}: Error {response$errors[[1]]$extensions$userPresentableMessage}"))
   }
 }
+
