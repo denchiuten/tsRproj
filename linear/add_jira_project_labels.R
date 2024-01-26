@@ -226,9 +226,9 @@ for (i in 1:nrow(df_joined)) {
   
   response <- assign_label(issue_id, label_id, api_url)
   # Check response
-  if (status_code(response) == 200) {
+  if (is.null(response$errors)) {
     print(str_glue("Added label {label_name} to {issue_key} ({i} of {nrow(df_joined)})"))
   } else {
-    print(str_glue("Failed to update issue {issue_key}: Error {status_code(response)} ({i} of {nrow(df_joined)})"))
+    print(str_glue("Failed to update issue {issue_key}: Error {response$errors[[1]]$extensions$userPresentableMessage} (({i} of {nrow(df_joined)})"))
   }
 }

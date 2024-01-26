@@ -273,3 +273,30 @@ update_state <- function(issue_id, state_id, url) {
   
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
+
+
+cancel_project <- function(project_id) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      projectUpdate(
+        id: \"{project_id}\"
+        input: {{
+          state: \"canceled\" 
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = "https://api.linear.app/graphql", 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}

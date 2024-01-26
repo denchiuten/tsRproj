@@ -1,7 +1,7 @@
 
 # purpose -----------------------------------------------------------------
 
-# apply labels to PTINC issues
+# apply labels to PCC issues
 
 # Starting Stuff ----------------------------------------------------------
 pacman::p_load(
