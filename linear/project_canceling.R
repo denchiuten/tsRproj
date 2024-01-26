@@ -15,12 +15,15 @@ pacman::p_load(
   RPostgreSQL,
   httr,
   RJSONIO,
-  stringr
+  stringr,
+  googlesheets4
 )
 
 query <- read_file("open_project_query.sql")
 source("linear_functions.R")
 cutoff_date <- as.Date("2023-12-01")
+gsheet_url <- "https://docs.google.com/spreadsheets/d/1LUTtPt3D8NThtKnRHIxTss9oXcNt7kBq-QsMKa8rAaY/edit#gid=0"
+gs4_auth("dennis@terrascope.com")
 # Redshift query -----------------------------------------------------------
 
 con <- aws_connect()
@@ -53,3 +56,7 @@ for (i in 1:nrow(df_final)) {
 }
 
 
+# write data frame to GSheet ----------------------------------------------
+
+ss <- gs4_get(gsheet_url)
+write_sheet(df_final, ss, str_glue("canceled_{today()}"))
