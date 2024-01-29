@@ -37,6 +37,6 @@ df_clean <- df_raw |>
     )
   ) |> 
   arrange(action, email)
-    
-    
-  )
+
+ss <- gs4_get(gsheet_url)    
+write_sheet(df_clean, ss, sheet = str_glue("{today()}"))
