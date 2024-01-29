@@ -27,7 +27,10 @@ df_long <- df_clean |>
     cols = starts_with("4"),
     names_to = "date"
     ) |> 
-  mutate(across(date, ~ as.Date(as.numeric(.), origin = "1899-12-30"))) |> 
+  mutate(
+    across(date, ~ as.Date(as.numeric(.), origin = "1899-12-30")),
+    import_date = today()
+    ) |> 
   filter(value != 0) |> 
   rename(
     olam_view = `Olam View`,
@@ -41,3 +44,7 @@ df_long <- df_clean |>
     general_ledger_desc = `G/L Description`,
     description = Description
   )
+
+# write and import --------------------------------------------------------
+
+write_csv(df_long, file = str_glue("{today()}.csv"))
