@@ -300,3 +300,29 @@ cancel_project <- function(project_id) {
   
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
+
+create_label <- function(label_name, parent_id) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueLabelCreate(
+        input: {{
+          name: \"{label_name}\"
+          parentId: \"{parent_id}\" 
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = "https://api.linear.app/graphql", 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}
