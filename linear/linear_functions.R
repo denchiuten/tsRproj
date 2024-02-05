@@ -123,7 +123,7 @@ assign_label <- function(issue_id, label_id, url) {
       }}"
   )
   response <- POST(
-    url = url, 
+    url = "https://api.linear.app/graphql", 
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
