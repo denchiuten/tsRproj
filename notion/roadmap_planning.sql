@@ -1,7 +1,7 @@
 SELECT 
 	p.id AS page_id,
 	p.url AS page_url,
-	s.status AS task_status_json,
+	s.status AS status_json,
 	a.people AS assignee_json,
 	t.title AS title_json,
 	tl.select AS timeline_json,
