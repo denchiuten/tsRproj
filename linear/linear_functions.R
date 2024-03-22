@@ -326,3 +326,29 @@ create_label <- function(label_name, parent_id) {
   
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
+
+update_project_state <- function(project_id, newstate) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      projectUpdate(
+        id: \"{project_id}\"
+        input: {{
+          state: \"{newstate}\" 
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = "https://api.linear.app/graphql", 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}

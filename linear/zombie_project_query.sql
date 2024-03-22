@@ -1,6 +1,7 @@
 SELECT
 	p.id AS project_id,
 	p.name AS project_name,
+	p.state AS project_state,
 	p.created_at::DATE AS created_date,
 	p.updated_at::DATE AS updated_date,
 	lead.name AS lead_name,
@@ -41,4 +42,4 @@ WHERE
 	-- exclude any that belong to the roadmap
 	AND rp.project_id IS NULL
 	AND t.id IS NULL
-GROUP BY 1,2,3,4,5,6,7,8,9
+GROUP BY 1,2,3,4,5,6,7,8,9,10
