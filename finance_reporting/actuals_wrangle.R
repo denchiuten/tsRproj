@@ -12,10 +12,12 @@ pacman::p_load(
   googlesheets4
 )
 
-gs4_auth("dennis@terrascope.com")
-actuals_url <- "https://docs.google.com/spreadsheets/d/1lUw1IX8xnQ6pBbCvbXOY7ZhXcTbnjdcA4JfCo26xmLM/edit#gid=0"
+gs4_auth("dennis@terrascope.com", scopes = "https://www.googleapis.com/auth/spreadsheets")
+# actuals_url <- "https://docs.google.com/spreadsheets/d/174HpknrYpoBDT1XAGz_RfJh-lMLNaeNxrDi2SCqzmwE/edit#gid=0"
+# actuals_url <- "https://docs.google.com/spreadsheets/d/1lUw1IX8xnQ6pBbCvbXOY7ZhXcTbnjdcA4JfCo26xmLM/edit#gid=0"
+actuals_url <- "https://docs.google.com/spreadsheets/d/1X_y4x7BuER_oddeyIzFaDcZbH3wZPmq27gcV7EMd_-I/edit?usp=drivesdk"
 ss <- gs4_get(actuals_url)
-close_date <- as.Date("2024-01-31")
+close_date <- as.Date("2024-03-22")
 # read in file and clean it -----------------------------------------------
 
 df_raw <- read_sheet(ss)
@@ -48,12 +50,13 @@ df_long <- df_clean |>
     description = Description
   ) |> 
   mutate(
-    across(date, ~ dmy(.)),
     close_date = close_date,
+    import_date = today(),
     across(
       c(pnl, cash_commitment), 
       ~ifelse(. == 1, TRUE, FALSE)
     ),
+    across(date, ~ dmy(.)),
     across(finance_cost_centre, as.numeric),
     across(finance_cost_centre, ~replace_na(., 0))
   )
