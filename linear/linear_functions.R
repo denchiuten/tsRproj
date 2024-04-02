@@ -24,7 +24,7 @@ get_labels <- function(url, cursor = NULL) {
     url = url,
     body = toJSON(list(query = query)),
     add_headers(
-      Authorization = key_get("linear"),
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"),
       "Content-Type" = "application/json"
     )
   )
@@ -50,7 +50,7 @@ add_estimate <- function(issue_id, points, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -75,7 +75,7 @@ assign_assignee <- function(issue_id, user_id, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -102,7 +102,7 @@ assign_cycle <- function(issue_id, cycle_id, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -127,7 +127,31 @@ assign_label <- function(issue_id, label_id, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}
+
+remove_label <- function(issue_id, label_id, url) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueRemoveLabel(
+        id: \"{issue_id}\"
+        labelId: \"{label_id}\" 
+        ) {{
+        success
+        }}
+      }}"
+  )
+  response <- POST(
+    url = "https://api.linear.app/graphql", 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -153,7 +177,7 @@ mark_dupe <- function(issue_id, duplicate_of_id, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -180,7 +204,7 @@ assign_project <- function(issue_id, project_id, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -209,7 +233,7 @@ assign_parent <- function(child_id, parent_id, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -240,7 +264,7 @@ fetch_projects <- function(url, cursor = NULL) {
     url = url,
     body = toJSON(list(query = query)),
     add_headers(
-      Authorization = key_get("linear"),
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"),
       "Content-Type" = "application/json"
     )
   )
@@ -266,7 +290,7 @@ update_state <- function(issue_id, state_id, url) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -293,7 +317,7 @@ cancel_project <- function(project_id) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -319,7 +343,7 @@ create_label <- function(label_name, parent_id) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
@@ -345,7 +369,7 @@ update_project_state <- function(project_id, newstate) {
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(
-      Authorization = key_get("linear"), 
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
       "Content-Type" = "application/json"
     )
   )
