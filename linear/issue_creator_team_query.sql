@@ -18,6 +18,7 @@ SELECT
 	i.identifier,
 	creator.email AS creator_email,
 	creator.team_name,
+	assignee.team_name AS assigned_team_name,
 	l2.id AS label_id
 FROM linear.issue AS i
 INNER JOIN linear.team AS t
