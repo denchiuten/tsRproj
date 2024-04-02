@@ -31,7 +31,7 @@ LEFT JOIN (
 	INNER JOIN linear.label AS l
 		ON il.label_id = l.id
 		AND l._fivetran_deleted IS FALSE
-		AND l.parent_id = '591c8377-11b9-43ab-9b39-58b3f7e9a36b'. -- parent_id for Requesting Team label group
+		AND l.parent_id = '591c8377-11b9-43ab-9b39-58b3f7e9a36b' -- parent_id for Requesting Team label group
 	WHERE il._fivetran_deleted IS FALSE
 ) AS request_team
 	ON i.id = request_team.issue_id
