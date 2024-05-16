@@ -15,11 +15,9 @@ pacman::p_load_current_gh("denchiuten/tsViz")
 theme_set(theme_ts())
 
 query_auth0 <- "
-  SELECT 
+  SELECT DISTINCT 
   	id AS auth0_id,
-  	email,
-  	given_name AS first_name,
-  	family_name AS last_name
+  	email
   FROM auth0.users
 "
 
@@ -52,12 +50,13 @@ df_auth0_norm <- df_auth0 |>
     !str_detect(email, "terrascope.com"),
     !str_detect(email, "gmail.com"),
     !str_detect(email, "@mobileprogramming.com"),
-    !str_detect(email, "mailinator.com")
-    )
+    !str_detect(email, "mailinator.com"),
+    !str_detect(email, "thoughtworks.com")
+    ) |> 
+  distinct(auth0_id, email)
 
 df_missing <- df_auth0_norm |> 
-  left_join(df_hs_norm, by = "email") |> 
-  filter(is.na(hubspot_id)) |> 
-  select(first_name, last_name, email)
+  anti_join(df_hs_norm, by = "email") |> 
+  select(email)
 
 write_csv(df_missing, "contact_import.csv")
