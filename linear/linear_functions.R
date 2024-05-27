@@ -271,7 +271,7 @@ fetch_projects <- function(url, cursor = NULL) {
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
-update_state <- function(issue_id, state_id, url) {
+update_state <- function(issue_id, state_id) {
   
   mutation <- str_glue(
     "mutation{{
@@ -286,7 +286,7 @@ update_state <- function(issue_id, state_id, url) {
       }}"
   )
   response <- POST(
-    url = url, 
+    url = "https://api.linear.app/graphql", 
     body = toJSON(list(query = mutation)), 
     encode = "json", 
     add_headers(

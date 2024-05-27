@@ -50,13 +50,12 @@ source("linear_functions.R")
 
 df_raw <- dbFetch(dbSendQuery(con, query))
 df_clean <- df_raw |> 
-  arrange(identifier)
+  arrange(from_state, identifier)
 
-i <-  1
 # loop --------------------------------------------------------------------
 
 
-for (i in 2:nrow(df_clean)) {
+for (i in 1:nrow(df_clean)) {
   
   issue_id <- df_clean$issue_id[i]
   issue_key <- df_clean$identifier[i]
