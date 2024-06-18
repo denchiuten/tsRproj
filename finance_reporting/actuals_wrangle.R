@@ -8,16 +8,13 @@ pacman::p_load(
   keyring,
   DBI,
   RPostgreSQL,
-  readxl,
   googlesheets4
 )
 
-gs4_auth("dennis@terrascope.com", scopes = "https://www.googleapis.com/auth/spreadsheets")
-# actuals_url <- "https://docs.google.com/spreadsheets/d/174HpknrYpoBDT1XAGz_RfJh-lMLNaeNxrDi2SCqzmwE/edit#gid=0"
-# actuals_url <- "https://docs.google.com/spreadsheets/d/1lUw1IX8xnQ6pBbCvbXOY7ZhXcTbnjdcA4JfCo26xmLM/edit#gid=0"
-actuals_url <- "https://docs.google.com/spreadsheets/d/1X_y4x7BuER_oddeyIzFaDcZbH3wZPmq27gcV7EMd_-I/edit?usp=drivesdk"
+gs4_auth("dennis@terrascope.com")
+actuals_url <- "https://docs.google.com/spreadsheets/d/1XX4E4ITCiCiPqq57hJYCxGvu1id72tOcZZ0UDex9rxE/edit#gid=0"
 ss <- gs4_get(actuals_url)
-close_date <- as.Date("2024-03-22")
+close_date <- as.Date("2024-05-31")
 # read in file and clean it -----------------------------------------------
 
 df_raw <- read_sheet(ss)
@@ -27,7 +24,8 @@ df_clean <- df_raw |>
     if_any(everything(), ~ !is.na(.)),
     !is.na(`P&L`),
     !is.na(CC)
-  )
+  ) |> 
+  mutate(across(.cols = matches("^[0-9]"), .fns = as.character))
 
 df_long <- df_clean |> 
   pivot_longer(
@@ -45,6 +43,7 @@ df_long <- df_clean |>
     country = Country,
     pnl = `P&L`,
     cash_commitment = CC,
+    normalised = Normalised,
     mgmt_pnl_cost_type =`Cost type - Management P&L`,
     general_ledger_desc = `G/L Description`,
     description = Description
@@ -53,7 +52,7 @@ df_long <- df_clean |>
     close_date = close_date,
     import_date = today(),
     across(
-      c(pnl, cash_commitment), 
+      c(pnl, cash_commitment, normalised), 
       ~ifelse(. == 1, TRUE, FALSE)
     ),
     across(date, ~ dmy(.)),
