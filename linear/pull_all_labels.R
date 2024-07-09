@@ -22,7 +22,7 @@ pacman::p_load(
 # theme_set(theme_ts())
 api_url <- "https://api.linear.app/graphql"
 gs4_auth("dennis@terrascope.com")
-gsheet_url <- "https://docs.google.com/spreadsheets/d/1n06XOzaEvqZQ9QL8rgUZQjhZErNtTcm8koMxPLG7J3w/edit#gid=0"
+gsheet_url <- "https://docs.google.com/spreadsheets/d/1s4BF8_ttE1vg7A3ahXa8qmNnP2ZyP-AEXDb88b1bBYg/edit?gid=926300034#gid=926300034"
 
 # function ----------------------------------------------------------------
 get_labels <- function(url, cursor = NULL) {

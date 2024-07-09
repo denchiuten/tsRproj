@@ -23,7 +23,7 @@ con <- aws_connect()
 df_raw <- dbFetch(dbSendQuery(con, query))
 
 df_final <- df_raw |> 
-  arrange(label_id, identifier)
+  arrange(identifier, label_id)
 
 # loop --------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ for (i in 1:nrow(df_final)) {
   issue_key <- df_final$identifier[i]
   linear_label_id <- df_final$label_id[i]
   
-  response <- assign_label(issue_id, linear_label_id, "https://api.linear.app/graphql")
+  response <- assign_label(issue_id, linear_label_id)
   # Check response
   if (is.null(response$errors)) {
     print(str_glue("Added Requesting Team label to {issue_key} ({i} of {nrow(df_final)})"))

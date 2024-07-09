@@ -110,7 +110,7 @@ assign_cycle <- function(issue_id, cycle_id, url) {
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
-assign_label <- function(issue_id, label_id, url) {
+assign_label <- function(issue_id, label_id) {
   
   mutation <- str_glue(
     "mutation{{
@@ -359,6 +359,59 @@ update_project_state <- function(project_id, newstate) {
         id: \"{project_id}\"
         input: {{
           state: \"{newstate}\" 
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = "https://api.linear.app/graphql", 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}
+
+issue_batch_labels_update <- function(label_id, issue_ids) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      issueBatchUpdate(
+        ids: [{issue_ids}]
+        input: {{
+          labelIds: [\"{label_id}\"]
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = "https://api.linear.app/graphql", 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}
+
+add_project_link <- function(project_id, url, label) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      projectLinkCreate(
+        input: {{
+          label: \"{label}\" 
+          projectId: \"{project_id}\"
+          url: \"{url}\"
         }}
         ) {{success}}
       }}"
