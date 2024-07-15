@@ -429,3 +429,29 @@ add_project_link <- function(project_id, url, label) {
   
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
+
+add_milestone_date <- function(milestone_id, target_date) {
+  
+  mutation <- str_glue(
+    "mutation{{
+      projectMilestoneUpdate(
+        id: \"{milestone_id}\"
+        input: {{
+          targetDate: \"{target_date}\" 
+        }}
+        ) {{success}}
+      }}"
+  )
+  
+  response <- POST(
+    url = "https://api.linear.app/graphql", 
+    body = toJSON(list(query = mutation)), 
+    encode = "json", 
+    add_headers(
+      Authorization = key_get("linear", "bizopsautomation@terrascope.com"), 
+      "Content-Type" = "application/json"
+    )
+  )
+  
+  return(fromJSON(content(response, as = "text"), flatten = TRUE))
+}
