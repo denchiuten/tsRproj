@@ -8,8 +8,11 @@ pacman::p_load(
   RPostgreSQL,
   stringr,
   httr,
-  RJSONIO
+  RJSONIO,
+  googlesheets4
 )
+
+
 
 query <- "
   SELECT DISTINCT c.id AS conversation_id
