@@ -12,9 +12,9 @@ pacman::p_load(
 )
 
 gs4_auth("dennis@terrascope.com")
-actuals_url <- "https://docs.google.com/spreadsheets/d/1XX4E4ITCiCiPqq57hJYCxGvu1id72tOcZZ0UDex9rxE/edit#gid=0"
+actuals_url <- "https://docs.google.com/spreadsheets/d/1W1Zcg-zAbvNhvuDyD1Jdhj0opgLSEBZuO7lTclc_eyY/edit?usp=drivesdk"
 ss <- gs4_get(actuals_url)
-close_date <- as.Date("2024-05-31")
+close_date <- as.Date("2024-07-31")
 # read in file and clean it -----------------------------------------------
 
 df_raw <- read_sheet(ss)
@@ -25,14 +25,16 @@ df_clean <- df_raw |>
     !is.na(`P&L`),
     !is.na(CC)
   ) |> 
-  mutate(across(.cols = matches("^[0-9]"), .fns = as.character))
+  mutate(
+    across(.cols = matches("^[0-9]"), .fns = as.character)
+    )
 
 df_long <- df_clean |> 
   pivot_longer(
     cols = matches("^[0-9]"),
     names_to = "date"
   ) |> 
-  filter(value != 0) |> 
+  # filter(value != 0) |>
   rename(
     lt_ppt_mapping = `LT PPT Mapping`,
     location = Location,
@@ -46,7 +48,8 @@ df_long <- df_clean |>
     normalised = Normalised,
     mgmt_pnl_cost_type =`Cost type - Management P&L`,
     general_ledger_desc = `G/L Description`,
-    description = Description
+    description = Description,
+    category = Category
   ) |> 
   mutate(
     close_date = close_date,
@@ -57,7 +60,8 @@ df_long <- df_clean |>
     ),
     across(date, ~ dmy(.)),
     across(finance_cost_centre, as.numeric),
-    across(finance_cost_centre, ~replace_na(., 0))
+    across(finance_cost_centre, ~replace_na(., 0)),
+    across(value, ~replace_na(., "0"))
   )
 
 
