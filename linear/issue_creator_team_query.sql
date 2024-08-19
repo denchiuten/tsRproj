@@ -23,7 +23,7 @@ SELECT
 FROM linear.issue AS i
 INNER JOIN linear.team AS t
 	ON i.team_id = t.id
-	AND t.key IN ('OPS', 'LAW', 'CLAW', 'PPL', 'IT', 'DEV') -- only care about teams that receive a lot of requests from internal stakeholders
+	AND t.key IN ('OPS', 'LAW', 'CLAW', 'PPL', 'IT', 'DEV', 'CS') -- only care about teams that receive a lot of requests from internal stakeholders
 
 -- identify issues that are already tagged with a label in the Requesting Team group so we can exclude them
 LEFT JOIN (

@@ -27,7 +27,6 @@ df_final <- df_raw |>
 
 # loop --------------------------------------------------------------------
 
-
 for (i in 1:nrow(df_final)) {
   
   issue_id <- df_final$issue_id[i]
