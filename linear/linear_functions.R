@@ -83,7 +83,7 @@ assign_assignee <- function(issue_id, user_id, url) {
   return(fromJSON(content(response, as = "text"), flatten = TRUE))
 }
 
-assign_cycle <- function(issue_id, cycle_id, url) {
+assign_cycle <- function(issue_id, cycle_id, url = "https://api.linear.app/graphql") {
   
   mutation <- str_glue(
     "mutation{{
