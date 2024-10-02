@@ -1,5 +1,5 @@
 WITH latest_cycle_change AS (
-
+-- identify the most recent row in the issue_history table where an issue's cycle was changed
 	SELECT
 		issue_id,
 		MAX(updated_at) AS last_updated
@@ -12,6 +12,7 @@ WITH latest_cycle_change AS (
 ),
 
 last_cycle AS (
+-- get the cycle id corresponding to the latest update
 	SELECT
 		h.issue_id,
 		h.from_cycle_id	
@@ -26,6 +27,7 @@ last_cycle AS (
 ),
 
 new_cycle AS (
+-- find cycle id for the cycles in APPS	
 	SELECT
 		c.id AS cycle_id,
 		c.starts_at,
