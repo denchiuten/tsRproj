@@ -27,7 +27,7 @@ last_cycle AS (
 ),
 
 new_cycle AS (
--- find cycle id for the cycles in APPS	
+-- find cycle id for the cycles in SELF	
 	SELECT
 		c.id AS cycle_id,
 		c.starts_at,
@@ -35,7 +35,7 @@ new_cycle AS (
 	FROM linear.cycle AS c
 	INNER JOIN linear.team AS t
 		ON c.team_id = t.id
-		AND t.key = 'APPS'
+		AND t.key = 'POPS'
 	WHERE
 		1 = 1
 		AND c._fivetran_deleted IS FALSE
@@ -51,13 +51,14 @@ INNER JOIN last_cycle AS h
 	ON i.id = h.issue_id
 INNER JOIN linear.team AS t
 	ON i.team_id = t.id
-	AND t.key = 'APPS'
+	AND t.key = 'POPS'
 INNER JOIN linear.cycle AS c
 	ON h.from_cycle_id = c.id
 	AND c._fivetran_deleted IS FALSE
 	AND c.ends_at >= CURRENT_TIMESTAMP
 LEFT JOIN new_cycle
-	ON c.ends_at = new_cycle.ends_at
+	-- cast ends_at to DATE to account for differences in time zone
+	ON c.ends_at::DATE = new_cycle.ends_at::DATE
 WHERE
 	1 = 1
 	AND i._fivetran_deleted IS FALSE
