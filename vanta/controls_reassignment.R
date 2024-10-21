@@ -64,7 +64,6 @@ assign_control <- function(controlId, userId) {
 
 
 # loop time ---------------------------------------------------------------
-i <- 6
 
 #set token in keyring
 key_set_with_value(service = "vanta", password = gen_token())
