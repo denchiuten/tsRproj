@@ -55,7 +55,7 @@ assign_control <- function(controlId, userId) {
     body = RJSONIO::toJSON(list(userId = userId)), 
     encode = "json", 
     add_headers(
-      Authorization = stringr::str_glue("Bearer {gen_token()}"), 
+      Authorization = stringr::str_glue("Bearer {key_get('vanta')}"), 
       "Content-Type" = "application/json"
     )
   )
@@ -64,22 +64,18 @@ assign_control <- function(controlId, userId) {
 
 
 # loop time ---------------------------------------------------------------
+i <- 6
 
-for (i in 1:nrow(df_clean)) {
+#set token in keyring
+key_set_with_value(service = "vanta", password = gen_token())
+
+for (i in 11:nrow(df_joined)) {
   
   readId <- df_joined$readId[i]
   controlId <- df_joined$controlId[i]
   userId <- df_joined$userId[i]
-  email <- df_joined$email
+  email <- df_joined$email[i]
   
   response <- assign_control(controlId, userId)
-  
-  # Check response
-  if (!is.null(response$data)) {
-    print(str_glue("Assigned {readId} to {email} ({i} of {nrow(df_joined)})"))
-  } else {
-    print(str_glue("Failed to update issue {readId}: Error \"{response$errors[[1]]$extensions$userPresentableMessage}\""))
-  }
+  print(str_glue("Assigned {readId} to {email} ({i} of {nrow(df_joined)})"))
 }
-  
-
